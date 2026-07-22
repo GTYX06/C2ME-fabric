@@ -365,7 +365,7 @@ dependencies {
 
 String getVersionSuffix() {
     def stdout = providers.exec {
-        commandLine 'git', 'describe', '--tags', '--dirty', '--broken'
+        commandLine 'git', 'describe', '--tags', '--dirty', '--broken', '--always'
     }.standardOutput.asText.get()
     stdout = stdout.toString().strip()
     def suffix = ""
