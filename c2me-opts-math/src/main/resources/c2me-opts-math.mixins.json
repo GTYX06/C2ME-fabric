@@ -5,6 +5,16 @@
   "plugin": "com.ishland.c2me.base.common.ModuleMixinPlugin",
   "mixins": [
     "MixinOctavePerlinNoiseSampler",
-    "MixinPerlinNoiseSampler"
+    "MixinPerlinNoiseSampler",
+    "MixinDoublePerlinNoiseSampler",
+    "MixinInterpolatedNoiseSampler",
+    "MixinDFTypesEndIslands",
+    "MixinBiomeAccess",
+    "MixinAquiferSamplerImpl",
+    "MixinMultiNoiseUtilEntries",
+    "df.MixinDFTShift",
+    "df.MixinDFTShiftA",
+    "df.MixinDFTShiftB",
+    "df.MixinDFTNoise"
   ]
 }

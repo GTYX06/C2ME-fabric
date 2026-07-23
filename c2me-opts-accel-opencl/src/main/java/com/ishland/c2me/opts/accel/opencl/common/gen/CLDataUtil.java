@@ -23,7 +23,7 @@ import com.ishland.c2me.opts.accel.opencl.common.compiler.emitters.misc.CLBlockS
 import com.ishland.c2me.opts.accel.opencl.common.compiler.GeneratedCLSource;
 import com.ishland.c2me.opts.accel.opencl.common.compiler.OpenCLCGen;
 import com.ishland.c2me.opts.accel.opencl.common.util.OpenCLStructs;
-import com.ishland.c2me.opts.natives_math.common.BindingsTemplate;
+import com.ishland.c2me.opts.math.common.BindingsTemplate;
 import com.ishland.flowsched.util.Assertions;
 import it.unimi.dsi.fastutil.objects.ObjectBidirectionalIterator;
 import it.unimi.dsi.fastutil.objects.Reference2IntLinkedOpenHashMap;

@@ -163,9 +163,11 @@ configure (allprojects - project(":tests")) {
         runs {
             server {
                 ideConfigGenerated project.rootProject == project
+                vmArg '--add-modules=jdk.incubator.vector'
             }
             client {
                 ideConfigGenerated project.rootProject == project
+                vmArg '--add-modules=jdk.incubator.vector'
             }
         }
     }
@@ -187,6 +189,7 @@ configure (allprojects - project(":tests")) {
     // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
     tasks.withType(JavaCompile) {
         options.encoding = "UTF-8"
+        options.compilerArgs += ['--add-modules', 'jdk.incubator.vector']
     }
 
     // reproducible
@@ -252,6 +255,7 @@ configure (allprojects - project(":tests")) {
     test {
         useJUnitPlatform()
         workingDir getLayout().buildDirectory
+        jvmArgs += ['--add-modules', 'jdk.incubator.vector']
     }
 
     jar.dependsOn test
