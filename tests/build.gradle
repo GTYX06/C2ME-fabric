@@ -24,6 +24,11 @@ allprojects {
     }
     loom {
         accessWidenerPath = project(":c2me-base").file("src/main/resources/c2me-base.accesswidener")
+        runs {
+            configureEach {
+                vmArg '--add-modules=jdk.incubator.vector'
+            }
+        }
 //        intermediaryUrl = 'https://repo.codemc.io/repository/relativitymc/org/relativitymc/intermediary/%1$s/intermediary-%1$s-v2.jar'
         setIntermediateMappingsProvider(com.ishland.c2me.gradle.MavenIntermediaryProvider.class) {
             it.refreshDeps = loom.refreshDeps()
