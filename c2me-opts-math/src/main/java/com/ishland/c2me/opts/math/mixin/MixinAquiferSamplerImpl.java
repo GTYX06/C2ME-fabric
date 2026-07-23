@@ -53,11 +53,11 @@ public class MixinAquiferSamplerImpl {
     @Shadow
     private short[] c2me$packedBlockPositions;
 
-    @Shadow @Final private int startX;
-    @Shadow @Final private int startY;
-    @Shadow @Final private int startZ;
-    @Shadow @Final private int sizeX;
-    @Shadow @Final private int sizeZ;
+    @Shadow @Final private int startCellX;
+    @Shadow @Final private int startCellY;
+    @Shadow @Final private int startCellZ;
+    @Shadow @Final private int cellCountX;
+    @Shadow @Final private int cellCountZ;
 
     @Unique
     private final int[] c2me$resArray = new int[4];
@@ -70,7 +70,7 @@ public class MixinAquiferSamplerImpl {
     @Overwrite
     private void aquiferExtracted$refreshDistPosIdx(int x, int y, int z) {
         VectorAquiferSampler.refreshDistPosIdx(this.c2me$packedBlockPositions, this.c2me$resArray,
-                this.startX, this.startY, this.startZ, this.sizeX, this.sizeZ, x, y, z);
+                this.startCellX, this.startCellY, this.startCellZ, this.cellCountX, this.cellCountZ, x, y, z);
         this.c2me$packed1 = this.c2me$resArray[0];
         this.c2me$packed2 = this.c2me$resArray[1];
         this.c2me$packed3 = this.c2me$resArray[2];
