@@ -37,6 +37,11 @@ import static com.ishland.c2me.opts.math.common.VectorMathUtil.*;
 
 public class VectorPerlinNoise {
 
+    private static final ThreadLocal<double[]> BUF_D = ThreadLocal.withInitial(() -> new double[32]);
+    private static final ThreadLocal<double[]> BUF_E = ThreadLocal.withInitial(() -> new double[32]);
+    private static final ThreadLocal<double[]> BUF_F = ThreadLocal.withInitial(() -> new double[32]);
+    private static final ThreadLocal<double[]> BUF_RES = ThreadLocal.withInitial(() -> new double[32]);
+
     public static double samplePerlin(PerlinNoiseSampler sampler, double x, double y, double z, double yScale, double yMax) {
         IPerlinNoiseSampler acc = (IPerlinNoiseSampler) (Object) sampler;
         byte[] perm = acc.getPermutation();
@@ -208,12 +213,17 @@ public class VectorPerlinNoise {
         DoubleVector ve = vy.add(sampler.originY);
         DoubleVector vf = vz.add(sampler.originZ);
 
-        double[] arrD = vd.toArray();
-        double[] arrE = ve.toArray();
-        double[] arrF = vf.toArray();
-        double[] res = new double[D_SPECIES.length()];
+        double[] arrD = BUF_D.get();
+        double[] arrE = BUF_E.get();
+        double[] arrF = BUF_F.get();
+        double[] res = BUF_RES.get();
 
-        for (int lane = 0; lane < D_SPECIES.length(); lane++) {
+        vd.intoArray(arrD, 0);
+        ve.intoArray(arrE, 0);
+        vf.intoArray(arrF, 0);
+
+        int len = D_SPECIES.length();
+        for (int lane = 0; lane < len; lane++) {
             double d = arrD[lane];
             double e = arrE[lane];
             double f = arrF[lane];

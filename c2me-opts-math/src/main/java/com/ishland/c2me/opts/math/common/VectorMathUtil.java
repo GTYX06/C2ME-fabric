@@ -62,13 +62,17 @@ public class VectorMathUtil {
     public static final double SKEW_FACTOR_2D = 0.3660254037844386; // 0.5 * (SQRT_3 - 1.0)
     public static final double UNSKEW_FACTOR_2D = 0.21132486540518713; // (3.0 - SQRT_3) / 6.0
 
+    private static final ThreadLocal<double[]> TEMP_BUF = ThreadLocal.withInitial(() -> new double[32]);
+
     public static double maintainPrecision(double value) {
         return value - Math.floor(value / 3.3554432E7 + 0.5) * 3.3554432E7;
     }
 
     public static DoubleVector maintainPrecision(DoubleVector v) {
-        double[] arr = v.toArray();
-        for (int k = 0; k < arr.length; k++) {
+        double[] arr = TEMP_BUF.get();
+        v.intoArray(arr, 0);
+        int len = D_SPECIES.length();
+        for (int k = 0; k < len; k++) {
             double val = arr[k];
             arr[k] = val - Math.floor(val / 3.3554432E7 + 0.5) * 3.3554432E7;
         }
