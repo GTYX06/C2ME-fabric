@@ -28,6 +28,7 @@ import com.ishland.c2me.opts.math.common.Config;
 
 public class ModuleEntryPoint {
 
+    @SuppressWarnings("unused")
     private static final boolean enabled = Config.vectorMode != Config.VectorMode.OFF;
 
     static {

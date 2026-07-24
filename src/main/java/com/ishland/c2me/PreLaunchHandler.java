@@ -38,6 +38,7 @@ import java.util.Set;
 
 public class PreLaunchHandler implements PreLaunchEntrypoint {
     @Override
+    @SuppressWarnings("unchecked")
     public void onPreLaunch() {
         com.ishland.c2me.opts.math.common.Config.checkVectorModule();
         if (Boolean.getBoolean("com.ishland.c2me.mixin.doAudit")) {
