@@ -33,11 +33,37 @@ import jdk.incubator.vector.VectorSpecies;
 
 public class VectorMathUtil {
 
-    public static final VectorSpecies<Double> D_SPECIES = DoubleVector.SPECIES_PREFERRED;
-    public static final VectorSpecies<Float> F_SPECIES = FloatVector.SPECIES_PREFERRED;
-    public static final VectorSpecies<Integer> I_SPECIES = IntVector.SPECIES_PREFERRED;
-    public static final VectorSpecies<Short> S_SPECIES = ShortVector.SPECIES_PREFERRED;
-    public static final VectorSpecies<Long> L_SPECIES = LongVector.SPECIES_PREFERRED;
+    public static final VectorSpecies<Double> D_SPECIES;
+    public static final VectorSpecies<Float> F_SPECIES;
+    public static final VectorSpecies<Integer> I_SPECIES;
+    public static final VectorSpecies<Short> S_SPECIES;
+    public static final VectorSpecies<Long> L_SPECIES;
+
+    static {
+        switch (Config.vectorMode) {
+            case AVX512 -> {
+                D_SPECIES = DoubleVector.SPECIES_512;
+                F_SPECIES = FloatVector.SPECIES_512;
+                I_SPECIES = IntVector.SPECIES_512;
+                S_SPECIES = ShortVector.SPECIES_512;
+                L_SPECIES = LongVector.SPECIES_512;
+            }
+            case AVX2 -> {
+                D_SPECIES = DoubleVector.SPECIES_256;
+                F_SPECIES = FloatVector.SPECIES_256;
+                I_SPECIES = IntVector.SPECIES_256;
+                S_SPECIES = ShortVector.SPECIES_256;
+                L_SPECIES = LongVector.SPECIES_256;
+            }
+            default -> {
+                D_SPECIES = DoubleVector.SPECIES_PREFERRED;
+                F_SPECIES = FloatVector.SPECIES_PREFERRED;
+                I_SPECIES = IntVector.SPECIES_PREFERRED;
+                S_SPECIES = ShortVector.SPECIES_PREFERRED;
+                L_SPECIES = LongVector.SPECIES_PREFERRED;
+            }
+        }
+    }
 
     public static final double[] FLAT_SIMPLEX_GRAD = new double[]{
             1, 1, 0, 0,

@@ -22,16 +22,33 @@
  * THE SOFTWARE.
  */
 
-package com.ishland.c2me.opts.math;
+package com.ishland.c2me.opts.math.common;
 
-import com.ishland.c2me.opts.math.common.Config;
+import com.ishland.c2me.base.common.config.ConfigSystem;
 
-public class ModuleEntryPoint {
+public class Config {
 
-    private static final boolean enabled = Config.vectorMode != Config.VectorMode.OFF;
+    public static final VectorMode vectorMode = new ConfigSystem.ConfigAccessor()
+            .key("vanillaWorldGenOptimizations.useVectorAPI")
+            .comment("""
+                    Defines the Vector API mode to use for world generation math optimizations.
+                    "default": Automatically checks CPU hardware capabilities and selects the best Vector system.
+                    OFF: Disables Vector API optimizations.
+                    AVX2: Forces 256-bit vector operations (AVX2).
+                    AVX512: Forces 512-bit vector operations (AVX512).
+                    
+                    Please preserve quotes so this config doesn't break
+                    """)
+            .getEnum(VectorMode.class, VectorMode.DEFAULT, VectorMode.OFF);
 
-    static {
-        Config.init();
+    public static void init() {
+    }
+
+    public enum VectorMode {
+        DEFAULT,
+        OFF,
+        AVX2,
+        AVX512
     }
 
 }
