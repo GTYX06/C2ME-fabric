@@ -42,6 +42,44 @@ public class Config {
             .getEnum(VectorMode.class, VectorMode.DEFAULT, VectorMode.OFF);
 
     public static void init() {
+        checkVectorModule();
+    }
+
+    public static void checkVectorModule() {
+        if (vectorMode != VectorMode.OFF) {
+            if (ModuleLayer.boot().findModule("jdk.incubator.vector").isEmpty()) {
+                throwFormattedException(
+                        "C2ME Vector API requires JVM incubator module jdk.incubator.vector",
+                        """
+                        C2ME's Vector API optimization is enabled (%s), but the required JVM module 'jdk.incubator.vector' is missing from the JVM arguments.
+                        
+                        To fix this issue:
+                        1. Add '--add-modules jdk.incubator.vector' to your JVM launch arguments.
+                        2. Alternatively, set 'vanillaWorldGenOptimizations.useVectorAPI = "OFF"' in c2me.toml to disable Vector API optimizations.
+                        """.formatted(vectorMode)
+                );
+            }
+        }
+    }
+
+    private static void throwFormattedException(String mainText, String treeText) {
+        try {
+            Class<?> clazz = Class.forName("net.fabricmc.loader.impl.FormattedException");
+            java.lang.reflect.Constructor<?> ctor = clazz.getConstructor(String.class, String.class);
+            Object exc = ctor.newInstance(mainText, treeText);
+            sneakyThrow((Throwable) exc);
+        } catch (ClassNotFoundException | NoSuchMethodException e) {
+            throw new RuntimeException(mainText + "\n\n" + treeText);
+        } catch (Exception e) {
+            if (e instanceof RuntimeException re) throw re;
+            if (e.getCause() instanceof RuntimeException re) throw re;
+            sneakyThrow(e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> void sneakyThrow(Throwable t) throws T {
+        throw (T) t;
     }
 
     public enum VectorMode {

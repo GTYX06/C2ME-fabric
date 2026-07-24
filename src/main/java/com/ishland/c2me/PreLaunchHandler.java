@@ -30,22 +30,16 @@ import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.service.MixinService;
 
-import java.io.File;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public class PreLaunchHandler implements PreLaunchEntrypoint {
-    private static final Logger LOGGER = LoggerFactory.getLogger("C2ME PreLaunch");
-
     @Override
     public void onPreLaunch() {
-        checkVectorModuleAndRelaunch();
-
+        com.ishland.c2me.opts.math.common.Config.checkVectorModule();
         if (Boolean.getBoolean("com.ishland.c2me.mixin.doAudit")) {
             Logger auditLogger = LoggerFactory.getLogger("C2ME Mixin Audit");
             try {
@@ -79,77 +73,6 @@ public class PreLaunchHandler implements PreLaunchEntrypoint {
             } catch (Throwable t) {
                 throw new RuntimeException("Failed to audit mixins", t);
             }
-        }
-    }
-
-    private static void checkVectorModuleAndRelaunch() {
-        if (ModuleLayer.boot().findModule("jdk.incubator.vector").isEmpty()) {
-            if (Boolean.getBoolean("c2me.relaunched")) {
-                LOGGER.error("jdk.incubator.vector module is still not present after relaunch. Please check your JVM arguments or Java installation.");
-                return;
-            }
-            LOGGER.warn("jdk.incubator.vector module is not added to JVM modules. Relaunching Minecraft with --add-modules jdk.incubator.vector...");
-            try {
-                String javaBin = ProcessHandle.current().info().command().orElse(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
-                List<String> jvmArgs = ManagementFactory.getRuntimeMXBean().getInputArguments();
-                List<String> command = new ArrayList<>();
-                command.add(javaBin);
-
-                boolean hasAddModules = false;
-                for (int i = 0; i < jvmArgs.size(); i++) {
-                    String arg = jvmArgs.get(i);
-                    if (arg.startsWith("--add-modules=")) {
-                        command.add(arg + ",jdk.incubator.vector");
-                        hasAddModules = true;
-                    } else if (arg.equals("--add-modules")) {
-                        command.add(arg);
-                        if (i + 1 < jvmArgs.size()) {
-                            i++;
-                            command.add(jvmArgs.get(i) + ",jdk.incubator.vector");
-                        } else {
-                            command.add("jdk.incubator.vector");
-                        }
-                        hasAddModules = true;
-                    } else {
-                        command.add(arg);
-                    }
-                }
-                if (!hasAddModules) {
-                    command.add("--add-modules");
-                    command.add("jdk.incubator.vector");
-                }
-                command.add("-Dc2me.relaunched=true");
-
-                String classpath = System.getProperty("java.class.path");
-                if (classpath != null && !classpath.isEmpty()) {
-                    command.add("-cp");
-                    command.add(classpath);
-                }
-
-                String mainCommand = System.getProperty("sun.java.command");
-                if (mainCommand != null && !mainCommand.isEmpty()) {
-                    String[] parts = mainCommand.split("\\s+");
-                    if (parts.length > 0) {
-                        if (parts[0].endsWith(".jar")) {
-                            command.add("-jar");
-                        }
-                        for (String part : parts) {
-                            if (!part.isEmpty()) {
-                                command.add(part);
-                            }
-                        }
-                    }
-                }
-
-                ProcessBuilder pb = new ProcessBuilder(command);
-                pb.inheritIO();
-                pb.start();
-                System.exit(0);
-            } catch (Throwable t) {
-                LOGGER.error("Failed to relaunch Minecraft with --add-modules jdk.incubator.vector", t);
-            }
-        } else {
-            LOGGER.info("jdk.incubator.vector module is present in the JVM.");
         }
     }
 }
