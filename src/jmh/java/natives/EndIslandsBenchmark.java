@@ -24,7 +24,7 @@
 
 package natives;
 
-import com.ishland.c2me.opts.natives_math.common.BindingsTemplate;
+import com.ishland.c2me.opts.math.common.BindingsTemplate;
 import natives.support.ReflectUtils;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.noise.SimplexNoiseSampler;

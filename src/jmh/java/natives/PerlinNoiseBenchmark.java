@@ -24,7 +24,7 @@
 
 package natives;
 
-import com.ishland.c2me.opts.natives_math.common.BindingsTemplate;
+import com.ishland.c2me.opts.math.common.BindingsTemplate;
 import net.minecraft.util.math.noise.PerlinNoiseSampler;
 import net.minecraft.util.math.random.LocalRandom;
 import org.openjdk.jmh.annotations.*;

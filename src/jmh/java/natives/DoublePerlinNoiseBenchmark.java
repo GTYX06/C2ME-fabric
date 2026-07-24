@@ -24,7 +24,7 @@
 
 package natives;
 
-import com.ishland.c2me.opts.natives_math.common.BindingsTemplate;
+import com.ishland.c2me.opts.math.common.BindingsTemplate;
 import com.ishland.c2me.base.common.util.MemoryUtil;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import natives.support.ReflectUtils;

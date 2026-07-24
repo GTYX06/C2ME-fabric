@@ -24,7 +24,7 @@
 
 package natives;
 
-import com.ishland.c2me.opts.natives_math.common.BindingsTemplate;
+import com.ishland.c2me.opts.math.common.BindingsTemplate;
 import natives.support.InterpolatedNoiseSamplerCopy;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;

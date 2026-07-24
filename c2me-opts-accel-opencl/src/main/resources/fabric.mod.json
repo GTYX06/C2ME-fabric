@@ -13,6 +13,7 @@
     "fabricloader": "*",
     "c2me-base": "*",
     "c2me-opts-dfc": "*",
+    "c2me-opts-math": "*",
     "c2me-rewrites-chunk-system": "*"
   },
   "recommends": {
