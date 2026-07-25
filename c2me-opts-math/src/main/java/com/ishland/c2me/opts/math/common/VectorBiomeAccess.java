@@ -94,6 +94,12 @@ public class VectorBiomeAccess {
             }
         }
 
+        if (x == -100 && y == -30 && z == -66) {
+            System.out.println("VectorBiomeAccess dists for x=-100, y=-30, z=-66:");
+            for (int i = 0; i < 8; i++) {
+                System.out.printf("  dists[%d] = %.10f%n", i, dists[i]);
+            }
+        }
         return minIdx;
     }
 }

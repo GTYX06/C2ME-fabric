@@ -15,10 +15,11 @@ atlassian-ide-plugin.xml
 
 # Compiled class file
 *.class
+bin/
+**/bin/
+.vscode/
 
-# Log file
-*.log
-
+# Mobile Tools for Java (J2ME)
 # BlueJ files
 *.ctxt
 

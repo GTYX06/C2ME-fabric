@@ -24,6 +24,7 @@
 
 package com.ishland.c2me.opts.dfc.common.gen.jvm.vif;
 
+import com.ishland.c2me.base.common.dfc.IDfcEachApplier;
 import com.ishland.c2me.opts.dfc.common.ast.EvalType;
 import com.ishland.c2me.opts.dfc.common.ducks.IDfcObjectCacheCapable;
 import com.ishland.c2me.opts.dfc.common.gen.jvm.util.DfcObjectCache;
@@ -31,7 +32,7 @@ import net.minecraft.world.gen.densityfunction.DensityFunction;
 
 import java.util.Objects;
 
-public class EachApplierVanillaInterface implements DensityFunction.EachApplier, IDfcObjectCacheCapable {
+public class EachApplierVanillaInterface implements DensityFunction.EachApplier, IDfcObjectCacheCapable, IDfcEachApplier {
 
     private final int[] x;
     private final int[] y;

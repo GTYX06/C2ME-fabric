@@ -24,6 +24,7 @@
 
 package com.ishland.c2me.opts.math.mixin.df;
 
+import com.ishland.c2me.base.common.dfc.IDfcEachApplier;
 import com.ishland.c2me.opts.math.common.VectorPerlinNoise;
 import net.minecraft.util.math.noise.DoublePerlinNoiseSampler;
 import net.minecraft.world.gen.densityfunction.DensityFunction;
@@ -44,6 +45,10 @@ public abstract class MixinDFTShift implements DensityFunctionTypes.Offset {
         DoublePerlinNoiseSampler noise = this.offsetNoise.noise();
         if (noise == null) {
             Arrays.fill(densities, 0.0);
+            return;
+        }
+        if (!(applier instanceof IDfcEachApplier)) {
+            applier.fill(densities, (DensityFunction) (Object) this);
             return;
         }
         double[] x = new double[densities.length];
