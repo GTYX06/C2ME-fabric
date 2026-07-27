@@ -60,7 +60,8 @@ public class VectorAquiferSampler {
                 int dz1 = gzmul + (position1 & 15) - z;
                 int dist1 = dx1 * dx1 + dy1 * dy1 + dz1 * dz1;
 
-                int p0 = (dist0 << 20) | (index0 << 16) | (posIdx0 & 0xFFFF);
+                int dist0Clamped = Math.min(dist0, 2047);
+                int p0 = (dist0Clamped << 20) | (index0 << 16) | (posIdx0 & 0xFFFF);
                 if (p0 <= C) {
                     int n01 = Math.max(A, p0);
                     A = Math.min(A, p0);
@@ -74,7 +75,8 @@ public class VectorAquiferSampler {
                     D = Math.min(D, n03);
                 }
 
-                int p1 = (dist1 << 20) | (index1 << 16) | (posIdx1 & 0xFFFF);
+                int dist1Clamped = Math.min(dist1, 2047);
+                int p1 = (dist1Clamped << 20) | (index1 << 16) | (posIdx1 & 0xFFFF);
                 if (p1 <= C) {
                     int n11 = Math.max(A, p1);
                     A = Math.min(A, p1);

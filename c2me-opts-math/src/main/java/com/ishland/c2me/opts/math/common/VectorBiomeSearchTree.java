@@ -24,41 +24,48 @@
 
 package com.ishland.c2me.opts.math.common;
 
-import jdk.incubator.vector.ShortVector;
+import jdk.incubator.vector.IntVector;
 import jdk.incubator.vector.VectorOperators;
 
-import static com.ishland.c2me.opts.math.common.VectorMathUtil.S_SPECIES;
+import static com.ishland.c2me.opts.math.common.VectorMathUtil.I_SPECIES;
 
 public class VectorBiomeSearchTree {
 
+    private static final ThreadLocal<int[]> BUF_TARGET = ThreadLocal.withInitial(() -> new int[16]);
+    private static final ThreadLocal<int[]> BUF_MINS = ThreadLocal.withInitial(() -> new int[16]);
+    private static final ThreadLocal<int[]> BUF_MAXS = ThreadLocal.withInitial(() -> new int[16]);
+
     public static long distanceSq(short[] target, short[] mins, short[] maxs) {
-        if (S_SPECIES.length() >= 8) {
-            ShortVector vTarget = ShortVector.fromArray(S_SPECIES, target, 0);
-            ShortVector vMins = ShortVector.fromArray(S_SPECIES, mins, 0);
-            ShortVector vMaxs = ShortVector.fromArray(S_SPECIES, maxs, 0);
+        if (I_SPECIES.length() >= 8) {
+            int[] tInt = BUF_TARGET.get();
+            int[] minInt = BUF_MINS.get();
+            int[] maxInt = BUF_MAXS.get();
 
-            ShortVector vL = vTarget.sub(vMaxs);
-            ShortVector vM = vMins.sub(vTarget);
-
-            ShortVector vZero = ShortVector.zero(S_SPECIES);
-            ShortVector vMClamped = vM.lanewise(VectorOperators.MAX, vZero);
-
-            // Select l >= 0 ? l : max(m, 0)
-            ShortVector vDist = vL.lanewise(VectorOperators.MAX, vMClamped).lanewise(VectorOperators.MAX, vZero);
-
-            short[] arrDist = vDist.toArray();
-            long res = 0;
             for (int i = 0; i < 7; i++) {
-                long d = arrDist[i];
-                res += d * d;
+                tInt[i] = target[i];
+                minInt[i] = mins[i];
+                maxInt[i] = maxs[i];
             }
-            return res;
+
+            IntVector vTarget = IntVector.fromArray(I_SPECIES, tInt, 0);
+            IntVector vMins = IntVector.fromArray(I_SPECIES, minInt, 0);
+            IntVector vMaxs = IntVector.fromArray(I_SPECIES, maxInt, 0);
+
+            IntVector vL = vTarget.sub(vMaxs);
+            IntVector vM = vMins.sub(vTarget);
+
+            IntVector vZero = IntVector.zero(I_SPECIES);
+            IntVector vMClamped = vM.lanewise(VectorOperators.MAX, vZero);
+            IntVector vDist = vL.lanewise(VectorOperators.MAX, vMClamped).lanewise(VectorOperators.MAX, vZero);
+
+            IntVector vSq = vDist.mul(vDist);
+            return vSq.reduceLanes(VectorOperators.ADD);
         } else {
             long res = 0;
             for (int i = 0; i < 7; i++) {
                 long l = (long) target[i] - (long) maxs[i];
                 long m = (long) mins[i] - (long) target[i];
-                long dist = l >= 0 ? l : Math.max(m, 0);
+                long dist = l >= 0 ? l : Math.max(m, 0L);
                 res += dist * dist;
             }
             return res;

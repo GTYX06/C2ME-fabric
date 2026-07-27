@@ -213,16 +213,20 @@ public class VectorPerlinNoise {
         DoubleVector ve = vy.add(sampler.originY);
         DoubleVector vf = vz.add(sampler.originZ);
 
+        int len = D_SPECIES.length();
         double[] arrD = BUF_D.get();
+        if (arrD.length < len) { arrD = new double[len]; BUF_D.set(arrD); }
         double[] arrE = BUF_E.get();
+        if (arrE.length < len) { arrE = new double[len]; BUF_E.set(arrE); }
         double[] arrF = BUF_F.get();
+        if (arrF.length < len) { arrF = new double[len]; BUF_F.set(arrF); }
         double[] res = BUF_RES.get();
+        if (res.length < len) { res = new double[len]; BUF_RES.set(res); }
 
         vd.intoArray(arrD, 0);
         ve.intoArray(arrE, 0);
         vf.intoArray(arrF, 0);
 
-        int len = D_SPECIES.length();
         for (int lane = 0; lane < len; lane++) {
             double d = arrD[lane];
             double e = arrE[lane];

@@ -30,6 +30,8 @@ import static com.ishland.c2me.opts.math.common.VectorMathUtil.*;
 
 public class VectorBiomeAccess {
 
+    private static final ThreadLocal<double[]> DISTS_BUF = ThreadLocal.withInitial(() -> new double[8]);
+
     public static int sample(long theSeed, int x, int y, int z) {
         int var0 = x - 2;
         int var1 = y - 2;
@@ -41,7 +43,7 @@ public class VectorBiomeAccess {
         double var7 = (double) (var1 & 3) / 4.0;
         double var8 = (double) (var2 & 3) / 4.0;
 
-        double[] dists = new double[8];
+        double[] dists = DISTS_BUF.get();
 
         for (int var11 = 0; var11 < 8; var11++) {
             boolean var12 = (var11 & 4) != 0;
@@ -85,6 +87,7 @@ public class VectorBiomeAccess {
                     return i;
                 }
             }
+            return 0;
         } else {
             for (int i = 1; i < 8; i++) {
                 if (dists[i] < minDist) {
@@ -92,14 +95,7 @@ public class VectorBiomeAccess {
                     minIdx = i;
                 }
             }
+            return minIdx;
         }
-
-        if (x == -100 && y == -30 && z == -66) {
-            System.out.println("VectorBiomeAccess dists for x=-100, y=-30, z=-66:");
-            for (int i = 0; i < 8; i++) {
-                System.out.printf("  dists[%d] = %.10f%n", i, dists[i]);
-            }
-        }
-        return minIdx;
     }
 }

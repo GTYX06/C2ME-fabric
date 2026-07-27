@@ -42,18 +42,34 @@ public class VectorMathUtil {
     static {
         switch (Config.vectorMode) {
             case AVX512 -> {
-                D_SPECIES = DoubleVector.SPECIES_512;
-                F_SPECIES = FloatVector.SPECIES_512;
-                I_SPECIES = IntVector.SPECIES_512;
-                S_SPECIES = ShortVector.SPECIES_512;
-                L_SPECIES = LongVector.SPECIES_512;
+                if (DoubleVector.SPECIES_PREFERRED.vectorBitSize() >= 512) {
+                    D_SPECIES = DoubleVector.SPECIES_512;
+                    F_SPECIES = FloatVector.SPECIES_512;
+                    I_SPECIES = IntVector.SPECIES_512;
+                    S_SPECIES = ShortVector.SPECIES_512;
+                    L_SPECIES = LongVector.SPECIES_512;
+                } else {
+                    D_SPECIES = DoubleVector.SPECIES_PREFERRED;
+                    F_SPECIES = FloatVector.SPECIES_PREFERRED;
+                    I_SPECIES = IntVector.SPECIES_PREFERRED;
+                    S_SPECIES = ShortVector.SPECIES_PREFERRED;
+                    L_SPECIES = LongVector.SPECIES_PREFERRED;
+                }
             }
             case AVX2 -> {
-                D_SPECIES = DoubleVector.SPECIES_256;
-                F_SPECIES = FloatVector.SPECIES_256;
-                I_SPECIES = IntVector.SPECIES_256;
-                S_SPECIES = ShortVector.SPECIES_256;
-                L_SPECIES = LongVector.SPECIES_256;
+                if (DoubleVector.SPECIES_PREFERRED.vectorBitSize() >= 256) {
+                    D_SPECIES = DoubleVector.SPECIES_256;
+                    F_SPECIES = FloatVector.SPECIES_256;
+                    I_SPECIES = IntVector.SPECIES_256;
+                    S_SPECIES = ShortVector.SPECIES_256;
+                    L_SPECIES = LongVector.SPECIES_256;
+                } else {
+                    D_SPECIES = DoubleVector.SPECIES_PREFERRED;
+                    F_SPECIES = FloatVector.SPECIES_PREFERRED;
+                    I_SPECIES = IntVector.SPECIES_PREFERRED;
+                    S_SPECIES = ShortVector.SPECIES_PREFERRED;
+                    L_SPECIES = LongVector.SPECIES_PREFERRED;
+                }
             }
             default -> {
                 D_SPECIES = DoubleVector.SPECIES_PREFERRED;
@@ -96,8 +112,12 @@ public class VectorMathUtil {
 
     public static DoubleVector maintainPrecision(DoubleVector v) {
         double[] arr = TEMP_BUF.get();
-        v.intoArray(arr, 0);
         int len = D_SPECIES.length();
+        if (arr.length < len) {
+            arr = new double[len];
+            TEMP_BUF.set(arr);
+        }
+        v.intoArray(arr, 0);
         for (int k = 0; k < len; k++) {
             double val = arr[k];
             arr[k] = val - Math.floor(val / 3.3554432E7 + 0.5) * 3.3554432E7;
