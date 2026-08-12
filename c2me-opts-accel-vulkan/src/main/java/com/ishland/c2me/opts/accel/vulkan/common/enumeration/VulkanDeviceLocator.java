@@ -58,7 +58,11 @@ public class VulkanDeviceLocator {
         if (initialized) return vkInstance != null;
         initialized = true;
         try {
-            VK.create();
+            try {
+                VK.create();
+            } catch (IllegalStateException ignored) {
+                // Vulkan function provider has already been created
+            }
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 VkApplicationInfo appInfo = VkApplicationInfo.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
