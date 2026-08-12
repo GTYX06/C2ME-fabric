@@ -35,8 +35,8 @@
 
 #define UINT32_MAX 0xffffffffu
 #define INT32_MAX 0x7fffffff
-#define UINT64_MAX 18446744073709551615u64
-#define INT64_MAX 9223372036854775807i64
+#define UINT64_MAX (~0u64)
+#define INT64_MAX 0x7FFFFFFFFFFFFFFFL
 
 #ifndef NULL
 #define NULL 0u64
@@ -65,7 +65,6 @@ layout(buffer_reference, scalar) buffer RWDoubleRef { double val; };
 #define constant
 #define restrict
 #define kernel
-#define __attribute__(x)
 
 const double FLAT_SIMPLEX_GRAD[16][3] = {
         {1, 1, 0},
@@ -101,19 +100,15 @@ void nop() {
 #endif
 
 uint64_t ptr_shift(uint64_t ptr, const int32_t shift) {
-    return (uint64_t ) (((uint64_t) ptr) + shift);
+    return ptr + uint64_t(shift);
 }
 
 uint64_t ptr_shift_const(uint64_t ptr, const int32_t shift) {
-    return (uint64_t ) (((uint64_t) ptr) + shift);
+    return ptr + uint64_t(shift);
 }
 
-// uint64_t ptr_shift_local(uint64_t ptr, const int32_t shift) {
-//     return (uint64_t ) (((uint64_t) ptr) + shift);
-// }
-
 uint64_t ptr_shift_global(uint64_t ptr, const int32_t shift) {
-    return (uint64_t ) (((uint64_t) ptr) + shift);
+    return ptr + uint64_t(shift);
 }
 
 double math_floor(const double v) {
@@ -272,12 +267,12 @@ math_noise_simplex_sample2d_global(global const uint32_t *  permutations, const 
         mi = 1;
     }
 
-    const double n = h - (double) l + UNSKEW_FACTOR_2D;
-    const double o = k - (double) m + UNSKEW_FACTOR_2D;
+    const double n = h - double(l) + UNSKEW_FACTOR_2D;
+    const double o = k - double(m) + UNSKEW_FACTOR_2D;
     const double p = h - 1.0 + 2.0 * UNSKEW_FACTOR_2D;
     const double q = k - 1.0 + 2.0 * UNSKEW_FACTOR_2D;
-    const int32_t r = (int32_t) i & 0xFF;
-    const int32_t s = (int32_t) j & 0xFF;
+    const int32_t r = int32_t(i) & 0xFF;
+    const int32_t s = int32_t(j) & 0xFF;
     const int32_t t = __math_simplex_map_global(permutations, r + __math_simplex_map_global(permutations, s)) % 12;
     const int32_t u = __math_simplex_map_global(permutations, r + li + __math_simplex_map_global(permutations, s + mi)) % 12;
     const int32_t v = __math_simplex_map_global(permutations, r + 1 + __math_simplex_map_global(permutations, s + 1)) % 12;
@@ -295,8 +290,8 @@ double math_perlinFade(const double value) {
 double __math_perlin_grad_global(global const uint8_t *  permutations, const int32_t px,
                                                                      const int32_t py, const int32_t pz, const double fx,
                                                                      const double fy, const double fz) {
-    const uint32_t map0 = (((uint32_t) permutations[((uint32_t) px) & 0xFF]) + ((uint32_t) py));
-    const uint32_t map1 = (((uint32_t) permutations[map0 & 0xFF]) + ((uint32_t) pz));
+    const uint32_t map0 = ((uint32_t(permutations)[(uint32_t(px)) & 0xFF]) + (uint32_t(py)));
+    const uint32_t map1 = ((uint32_t(permutations)[map0 & 0xFF]) + (uint32_t(pz)));
     const uint32_t hash = permutations[map1 & 0XFF] & 0xF;
     return FLAT_SIMPLEX_GRAD[hash][0] * fx + FLAT_SIMPLEX_GRAD[hash][1] * fy + FLAT_SIMPLEX_GRAD[hash][2] * fz;
 }
@@ -343,7 +338,7 @@ math_noise_perlin_sample_global(global const uint8_t *  permutations,
     const double l = f - k;
     const double o = yScale != 0 ? math_floor(((yMax >= 0.0 && yMax < h) ? yMax : h) / yScale + 1.0E-7) * yScale : 0;
 
-    return math_noise_perlin_sampleScalar_global(permutations, (int32_t) i, (int32_t) j, (int32_t) k, g, h - o, l, h);
+    return math_noise_perlin_sampleScalar_global(permutations, int32_t(i), int32_t(j), int32_t(k), g, h - o, l, h);
 }
 
 
@@ -536,9 +531,9 @@ math_end_islands_sample_global(global const uint32_t *  simplex_permutations, co
     const int32_t l = z % 2;
     volatile int32_t muld = x * x + z * z; // int32_t intentionally
     if (muld & 0x80000000L) {
-        return nan((uint32_t) 0);
+        return nan(uint32_t(0));
     }
-    float f = 100.0F - sqrt((float) (muld & 0x7fffffffL)) * 8.0F;
+    float f = 100.0F - sqrt(float(muld & 0x7fffffffL)) * 8.0F;
     f = clamp(f, -100.0F, 80.0F);
 
     int8_t ms[25 * 25], ns[25 * 25], hit[25 * 25];
@@ -562,22 +557,22 @@ math_end_islands_sample_global(global const uint32_t *  simplex_permutations, co
             #endif
             __builtin_trap();
             __builtin_unreachable();
-            return nan((uint64_t) 0);
+            return nan(uint64_t(0));
         }
     }
 
     if (omin * omin + pmin * pmin > 4096L) {
         for (uint32_t idx = 0; idx < 25 * 25; idx++) {
-            const int64_t o = (int64_t) i + (int64_t) ms[idx];
-            const int64_t p = (int64_t) j + (int64_t) ns[idx];
-            hit[idx] = math_noise_simplex_sample2d_global(simplex_permutations, (double) o, (double) p) < -0.9F;
+            const int64_t o = int64_t(i) + int64_t(ms)[idx];
+            const int64_t p = int64_t(j) + int64_t(ns)[idx];
+            hit[idx] = math_noise_simplex_sample2d_global(simplex_permutations, double(o), double(p)) < -0.9F;
         }
     } else {
         for (uint32_t idx = 0; idx < 25 * 25; idx++) {
-            const int64_t o = (int64_t) i + (int64_t) ms[idx];
-            const int64_t p = (int64_t) j + (int64_t) ns[idx];
+            const int64_t o = int64_t(i) + int64_t(ms)[idx];
+            const int64_t p = int64_t(j) + int64_t(ns)[idx];
             hit[idx] = (o * o + p * p > 4096L) && math_noise_simplex_sample2d_global(
-                    simplex_permutations, (double) o, (double) p) < -0.9F;
+                    simplex_permutations, double(o), double(p)) < -0.9F;
         }
     }
 
@@ -585,13 +580,13 @@ math_end_islands_sample_global(global const uint32_t *  simplex_permutations, co
         if (hit[idx]) {
             const int32_t m = ms[idx];
             const int32_t n = ns[idx];
-            const int64_t o = (int64_t) i + (int64_t) m;
-            const int64_t p = (int64_t) j + (int64_t) n;
-            const float g1 = fabs((float) o) * 3439.0F;
-            const float g2 = fabs((float) p) * 147.0F;
+            const int64_t o = int64_t(i) + int64_t(m);
+            const int64_t p = int64_t(j) + int64_t(n);
+            const float g1 = fabs(float(o)) * 3439.0F;
+            const float g2 = fabs(float(p)) * 147.0F;
             const float g = fmod((g1 + g2), 13.0F) + 9.0F;
-            const float h = (float) (k - m * 2);
-            const float q = (float) (l - n * 2);
+            const float h = float(k - m * 2);
+            const float q = float(l - n * 2);
             float r = 100.0F - sqrt(h * h + q * q) * g;
             r = clamp(r, -100.0F, 80.0F);
             f = fmax(f, r);
@@ -609,9 +604,9 @@ math_biome_access_sample(const int64_t theSeed, const int32_t x, const int32_t y
     const int32_t var3 = var0 >> 2;
     const int32_t var4 = var1 >> 2;
     const int32_t var5 = var2 >> 2;
-    const double var6 = (double) (var0 & 3) / 4.0;
-    const double var7 = (double) (var1 & 3) / 4.0;
-    const double var8 = (double) (var2 & 3) / 4.0;
+    const double var6 = double(var0 & 3) / 4.0;
+    const double var7 = double(var1 & 3) / 4.0;
+    const double var8 = double(var2 & 3) / 4.0;
     uint32_t var9 = 0;
     double var10 = DBL_MAX;
 
@@ -705,12 +700,12 @@ math_aquifer_unpackPackedZ(uint32_t packed) {
 
 int32_t
 math_aquifer_unpackPackedDist(uint64_t packed) {
-    return (int32_t) (packed >> 36UL);
+    return int32_t(packed >> 36u64);
 }
 
 int32_t
 math_aquifer_unpackPackedPosIdx(uint64_t packed) {
-    return (int32_t) (packed & 0xffffffffUL);
+    return int32_t(packed & 0xffffffffu64);
 }
 
 void
@@ -739,7 +734,7 @@ math_aquifer_refreshDistPosIdx_global(global const uint16_t * const packedBlockP
             int32_t dx0 = (gx << 4) + math_aquifer_unpackPackedX(position0) - x;
             int32_t dy0 = gymul + math_aquifer_unpackPackedY(position0) - y;
             int32_t dz0 = gzmul + math_aquifer_unpackPackedZ(position0) - z;
-            uint64_t dist_0 = (uint64_t) (dx0 * dx0 + dy0 * dy0 + dz0 * dz0);
+            uint64_t dist_0 = uint64_t(dx0 * dx0 + dy0 * dy0 + dz0 * dz0);
 
             uint64_t index1 = index - 2;
             uint32_t posIdx1 = posIdx0 + 1;
@@ -747,10 +742,10 @@ math_aquifer_refreshDistPosIdx_global(global const uint16_t * const packedBlockP
             int32_t dx1 = ((gx + 1) << 4) + math_aquifer_unpackPackedX(position1) - x;
             int32_t dy1 = gymul + math_aquifer_unpackPackedY(position1) - y;
             int32_t dz1 = gzmul + math_aquifer_unpackPackedZ(position1) - z;
-            uint64_t dist_1 = (uint64_t) (dx1 * dx1 + dy1 * dy1 + dz1 * dz1);
+            uint64_t dist_1 = uint64_t(dx1 * dx1 + dy1 * dy1 + dz1 * dz1);
 
-            ps[12 - index] = (dist_0 << 36UL) | (index0 << 32UL) | ((uint64_t) posIdx0);
-            ps[13 - index] = (dist_1 << 36UL) | (index1 << 32UL) | ((uint64_t) posIdx1);
+            ps[12 - index] = (dist_0 << 36u64) | (index0 << 32u64) | (uint64_t(posIdx0));
+            ps[13 - index] = (dist_1 << 36u64) | (index1 << 32u64) | (uint64_t(posIdx1));
 
             index -= 2;
         }
@@ -792,7 +787,7 @@ double math_clampedMap(const double value, const double oldStart, const double o
 }
 
 int32_t math_roundDownToMultiple(const double a, const int32_t b) {
-    return ((int32_t) math_floor(a / (double)b)) * b;
+    return (int32_t(math_floor)(a / double(b))) * b;
 }
 
 extern const int32_t genShapeCfg_minimumY;
@@ -920,7 +915,7 @@ typedef struct cache_result {
 
 cache_result_t df_cachelike_interpolator(global const worldgen_params_t *  params, global const double *  interpolator_buffer, const uint32_t cacheIndex, const int32_t x, const int32_t y, const int32_t z, const uint32_t interpolationState) {
     if (!params || (interpolationState & MASK_enableAllCaches) != MASK_enableAllCaches) {
-        return (cache_result_t) { .cached = false, .res = nan((uint64_t) 0) };
+        return (cache_result_t) { .cached = false, .res = nan(uint64_t(0)) };
     }
     // if (!params_local->isSamplingForCaches) {
     //     *res = data->result;
@@ -928,9 +923,9 @@ cache_result_t df_cachelike_interpolator(global const worldgen_params_t *  param
     // }
     const interpolation_pos_t pos = df_get_interpolation_pos(params, x, y, z);
     const double res = math_lerp3(
-        (double) pos.cellBlockX / (double) genShapeCfg_horizontalCellBlockCount(),
-        (double) pos.cellBlockY / (double) genShapeCfg_verticalCellBlockCount(),
-        (double) pos.cellBlockZ / (double) genShapeCfg_horizontalCellBlockCount(),
+        double(pos).cellBlockX / double(genShapeCfg_horizontalCellBlockCount)(),
+        double(pos).cellBlockY / double(genShapeCfg_verticalCellBlockCount)(),
+        double(pos).cellBlockZ / double(genShapeCfg_horizontalCellBlockCount)(),
         // data->x0y0z0,
         // data->x1y0z0,
         // data->x0y1z0,
@@ -953,7 +948,7 @@ cache_result_t df_cachelike_interpolator(global const worldgen_params_t *  param
 
 cache_result_t df_cachelike_flatcache(global const worldgen_params_t *  params, global const double *  data, const uint32_t cacheIndex, const int32_t x, const int32_t y, const int32_t z, const uint32_t interpolationState) {
     if (!params || (interpolationState & MASK_enableFlatCache) != MASK_enableFlatCache) {
-        return (cache_result_t) { .cached = false, .res = nan((uint64_t) 0) };
+        return (cache_result_t) { .cached = false, .res = nan(uint64_t(0)) };
     }
     const int32_t offsetX = math_block2biome(x) - params->startBiomeX;
     const int32_t offsetZ = math_block2biome(z) - params->startBiomeZ;
@@ -961,13 +956,13 @@ cache_result_t df_cachelike_flatcache(global const worldgen_params_t *  params, 
         const double res = data[df_address_flatcache_buffer(params, cacheIndex, offsetX, offsetZ)];
         return (cache_result_t) { .cached = true, .res = res };
     } else {
-        return (cache_result_t) { .cached = false, .res = nan((uint64_t) 0) };
+        return (cache_result_t) { .cached = false, .res = nan(uint64_t(0)) };
     }
 }
 
 cache_result_t df_cachelike_cache2d(global const worldgen_params_t *  params, global const double *  data, const uint32_t cacheIndex, const int32_t x, const int32_t y, const int32_t z, const uint32_t interpolationState) {
     if (!params || (interpolationState & MASK_enableAllCaches) != MASK_enableAllCaches) {
-        return (cache_result_t) { .cached = false, .res = nan((uint64_t) 0) };
+        return (cache_result_t) { .cached = false, .res = nan(uint64_t(0)) };
     }
     const int32_t offsetX = x - params->cache2d_startX;
     const int32_t offsetZ = z - params->cache2d_startZ;
@@ -975,7 +970,7 @@ cache_result_t df_cachelike_cache2d(global const worldgen_params_t *  params, gl
         const double res = data[df_address_cache2d_buffer(params, cacheIndex, offsetX, offsetZ)];
         return (cache_result_t) { .cached = true, .res = res };
     } else {
-        return (cache_result_t) { .cached = false, .res = nan((uint64_t) 0) };
+        return (cache_result_t) { .cached = false, .res = nan(uint64_t(0)) };
     }
 }
 
@@ -1111,11 +1106,11 @@ double __df_structureWeightSampler_getStructureWeight(global const float *  cons
     int32_t j = y + 12;
     int32_t k = z + 12;
     if (i >= 0 && i < 24 && j >= 0 && j < 24 && k >= 0 && k < 24) {
-        double d = (double)yy + 0.5;
-        // double e = MathHelper.squaredMagnitude((double)x, d, (double)z);
-        double e = ((double) x * (double) x) + (d * d) + ((double) z * (double) z);
+        double d = double(yy) + 0.5;
+        // double e = MathHelper.squaredMagnitude(double(x), d, double(z));
+        double e = (double(x) * double(x)) + (d * d) + (double(z) * double(z));
         double f = -d * math_fastInverseSqrt(e / 2.0) / 2.0;
-        return f * (double)structureWeightSamplerTable[k * 24 * 24 + i * 24 + j];
+        return f * double(structureWeightSamplerTable)[k * 24 * 24 + i * 24 + j];
     } else {
         return 0.0;
     }
@@ -1124,8 +1119,8 @@ double __df_structureWeightSampler_getStructureWeight(global const float *  cons
 double df_structureWeightSampler_sample(global const float *  const structureWeightSamplerTable, global const sws_index_t *  const data_index, const int32_t x, const int32_t y, const int32_t z) {
     const int32_t chunkX = x >> 4;
     const int32_t chunkZ = z >> 4;
-    const uint32_t dataRelX = (uint32_t) clamp(chunkX - data_index->startX, 0, (int32_t) data_index->sizeX - 1);
-    const uint32_t dataRelZ = (uint32_t) clamp(chunkZ - data_index->startZ, 0, (int32_t) data_index->sizeZ - 1);
+    const uint32_t dataRelX = uint32_t(clamp)(chunkX - data_index->startX, 0, int32_t(data_index)->sizeX - 1);
+    const uint32_t dataRelZ = uint32_t(clamp)(chunkZ - data_index->startZ, 0, int32_t(data_index)->sizeZ - 1);
     global const uint32_t *  const sws_data_offsets = ptr_shift_global(data_index, sizeof(sws_index_t));
     const uint32_t sws_current_offset = sws_data_offsets[dataRelX * data_index->sizeZ + dataRelZ];
 
@@ -1165,7 +1160,7 @@ double df_structureWeightSampler_sample(global const float *  const structureWei
                 d += 0.0;
                 break;
             case SWSTA_BURY:
-                d += __df_structureWeightSampler_getMagnitudeWeight(m, (double)p / 2.0, n);
+                d += __df_structureWeightSampler_getMagnitudeWeight(m, double(p) / 2.0, n);
                 break;
             case SWSTA_BEARD_THIN:
                 d += __df_structureWeightSampler_getStructureWeight(structureWeightSamplerTable, m, p, n, p) * 0.8;
@@ -1174,7 +1169,7 @@ double df_structureWeightSampler_sample(global const float *  const structureWei
                 d += __df_structureWeightSampler_getStructureWeight(structureWeightSamplerTable, m, max(0, max(o - y, y - boxEndY[i])), n, p) * 0.8;
                 break;
             case SWSTA_ENCAPSULATE:
-                d += __df_structureWeightSampler_getMagnitudeWeight((double)m / 2.0, (double)max(0, max(boxStartY[i] - y, y - boxEndY[i])) / 2.0, (double)n / 2.0) * 0.8;
+                d += __df_structureWeightSampler_getMagnitudeWeight(double(m) / 2.0, double(max)(0, max(boxStartY[i] - y, y - boxEndY[i])) / 2.0, double(n) / 2.0) * 0.8;
                 break;
             default:
                 #ifdef DEBUG
@@ -1182,7 +1177,7 @@ double df_structureWeightSampler_sample(global const float *  const structureWei
                 #endif
                 __builtin_trap();
                 __builtin_unreachable();
-                return nan((uint32_t) 0);
+                return nan(uint32_t(0));
         };
     }
 
@@ -1228,7 +1223,7 @@ double uninitializedF64() {
         double d;
         uint64_t l;
     } x;
-    x.l = 0x7ffddb972d486a4fUL;
+    x.l = 0x7ffddb972d486a4fu64;
     return x.d;
 }
 
@@ -1250,7 +1245,7 @@ double assertNotUninitializedF64(double in) {
         uint64_t l;
     } x;
     x.d = in;
-    if (x.l == 0x7ffddb972d486a4fUL) {
+    if (x.l == 0x7ffddb972d486a4fu64) {
         __builtin_trap();
     }
     return in;
@@ -1313,7 +1308,7 @@ int32_t chunkNoiseSampler_estimateSurfaceHeight(uint64_t const_data, uint64_t rw
         #endif
         __builtin_trap();
         __builtin_unreachable();
-        return nan((uint64_t) 0L);
+        return nan(uint64_t(0L));
     } else {
         return cache[relX * params->estimateSurfaceHeight_sizeBiomeZ + relZ];
     }
@@ -1352,14 +1347,14 @@ typedef struct random_state {
 } random_state_t;
 
 int64_t math_hashCode_int32x3(int32_t x, int32_t y, int32_t z) {
-    int64_t l = (int64_t)(x * 3129871) ^ (int64_t)z * 116129781L ^ (int64_t)y;
+    int64_t l = int64_t(x * 3129871) ^ int64_t(z) * 116129781L ^ int64_t(y);
     l = l * l * 42317861L + l * 11L;
     return l >> 16;
 }
 
 uint64_t math_mixStafford13(uint64_t seed) {
-    seed = ((int64_t) (seed ^ seed >> 30)) * -4658895280553007687L;
-    seed = ((int64_t) (seed ^ seed >> 27)) * -7723592293110705685L;
+    seed = (int64_t(seed ^ seed >> 30)) * -4658895280553007687L;
+    seed = (int64_t(seed ^ seed >> 27)) * -7723592293110705685L;
     return seed ^ seed >> 31;
 }
 
@@ -1368,7 +1363,7 @@ void random_state_set_seed(random_state_t *state, int64_t seed) {
         state->seedLo = (seed ^ 25214903917L) & 281474976710655L;
     } else if (state->type == RANDOM_Xoroshiro128PlusPlus) {
         state->seedLo = seed ^ 7640891576956012809L;
-        state->seedHi = ((int64_t) state->seedLo) + -7046029254386353131L;
+        state->seedHi = (int64_t(state)->seedLo) + -7046029254386353131L;
         state->seedLo = math_mixStafford13(state->seedLo);
         state->seedHi = math_mixStafford13(state->seedHi);
     } else {
@@ -1428,29 +1423,29 @@ int64_t random_state_Xoroshiro128PlusPlus_next0(random_state_t *state) {
 
     int64_t l = state->seedLo;
     int64_t m = state->seedHi;
-    int64_t n = math_rotateLeftU64((uint64_t) (l + m), 17) + l;
+    int64_t n = math_rotateLeftU64(uint64_t(l + m), 17) + l;
     m ^= l;
-    state->seedLo = math_rotateLeftU64((uint64_t) l, 49) ^ m ^ m << 21;
-    state->seedHi = math_rotateLeftU64((uint64_t) m, 28);
+    state->seedLo = math_rotateLeftU64(uint64_t(l), 49) ^ m ^ m << 21;
+    state->seedHi = math_rotateLeftU64(uint64_t(m), 28);
     return n;
 }
 
 int64_t random_state_Xoroshiro128PlusPlus_next(random_state_t *state, int32_t bits) {
-    return ((uint64_t) random_state_Xoroshiro128PlusPlus_next0(state)) >> (64 - bits);
+    return (uint64_t(random_state_Xoroshiro128PlusPlus_next0)(state)) >> (64 - bits);
 }
 
 float random_state_nextFloat(random_state_t *state) {
     if (state->type == RANDOM_Checked) {
-        return (float) random_state_Checked_next(state, 24) * 5.9604645E-8F;
+        return float(random_state_Checked_next)(state, 24) * 5.9604645E-8F;
     } else if (state->type == RANDOM_Xoroshiro128PlusPlus) {
-        return (float) random_state_Xoroshiro128PlusPlus_next(state, 24) * 5.9604645E-8F;
+        return float(random_state_Xoroshiro128PlusPlus_next)(state, 24) * 5.9604645E-8F;
     } else {
         #ifdef DEBUG
         printf("trap: random_state_nextFloat: unexpected random type %lu\n", state->type);
         #endif
         __builtin_trap();
         __builtin_unreachable();
-        return nan((uint32_t) 0);
+        return nan(uint32_t(0));
     }
 }
 
@@ -1464,7 +1459,7 @@ int32_t random_state_nextIntBounded(random_state_t *state, int32_t bound) {
             __builtin_unreachable();
             return 0;
         } else if ((bound & bound - 1) == 0) {
-            return (int32_t)((int64_t)bound * (int64_t)random_state_Checked_next(state, 31) >> 31);
+            return (int32_t)(int64_t(bound) * int64_t(random_state_Checked_next)(state, 31) >> 31);
         } else {
             int32_t i;
             int32_t j;
@@ -1492,18 +1487,18 @@ int32_t random_state_nextIntBounded(random_state_t *state, int32_t bound) {
             __builtin_unreachable();
             return 0;
         } else {
-            int64_t l = (uint32_t) random_state_Xoroshiro128PlusPlus_next0(state);
-            int64_t m = l * (int64_t)bound;
+            int64_t l = uint32_t(random_state_Xoroshiro128PlusPlus_next0)(state);
+            int64_t m = l * int64_t(bound);
             int64_t n = m & 4294967295L;
-            if (n < (int64_t)bound) {
-                for (int32_t i = ((uint32_t) ~bound + 1) % ((uint32_t) bound); n < (int64_t)i; n = m & 4294967295L) {
-                    l = (uint32_t) random_state_Xoroshiro128PlusPlus_next0(state);
-                    m = l * (int64_t)bound;
+            if (n < int64_t(bound)) {
+                for (int32_t i = ((uint32_t) ~bound + 1) % (uint32_t(bound)); n < int64_t(i); n = m & 4294967295L) {
+                    l = uint32_t(random_state_Xoroshiro128PlusPlus_next0)(state);
+                    m = l * int64_t(bound);
                 }
             }
 
             int64_t o = m >> 32;
-            int32_t ret = (int32_t) o;
+            int32_t ret = int32_t(o);
             if (ret >= bound) {
                 #ifdef DEBUG
                 printf("trap: random_state_nextIntBounded RANDOM_Checked ret >= bound\n ret=%d bound=%d\n", ret, bound);
@@ -1512,7 +1507,7 @@ int32_t random_state_nextIntBounded(random_state_t *state, int32_t bound) {
                 __builtin_unreachable();
                 return 0;
             }
-            return (int32_t)o;
+            return int32_t(o);
         }
     } else {
         #ifdef DEBUG
@@ -1599,7 +1594,7 @@ int32_t __aquifer_getFluidBlockY(uint64_t const_data, int32_t blockX, int32_t bl
         e = -1.0;
     } else {
         int i = surfaceHeightEstimate + 8 - blockY;
-        double f = bl ? math_clampedLerp(1.0, 0.0, ((double) i) / 64.0) : 0.0; // inline
+        double f = bl ? math_clampedLerp(1.0, 0.0, (double(i)) / 64.0) : 0.0; // inline
         double g = clamp(df_binding_fluid_level_floodedness(unblendedNoisePos), -1.0, 1.0);
         d = g + 0.8 + (f - 1.0) * 1.2; // inline
         e = g + 0.3 + (f - 1.0) * 1.1; // inline
@@ -1732,7 +1727,7 @@ typedef struct aquifer_result {
 
 double math_aquifer_maxDistance(int i, int a) {
     double d = 25.0;
-    return 1.0 - (double)abs(a - i) / 25.0;
+    return 1.0 - double(abs)(a - i) / 25.0;
 }
 
 const const double aquifer_NEEDS_FLUID_TICK_DISTANCE_THRESHOLD = -0x1.851eb851eb852p-1; // = maxDistance(MathHelper.square(10), MathHelper.square(12)) = -0.76
@@ -1786,7 +1781,7 @@ double __aquifer_calculateDensityModified(const sample_int32_ctx_t ctx, global c
         if (j == 0) {
             return 0.0;
         } else {
-            double d = 0.5 * (double)(fluidLevel->y + fluidLevel2->y);
+            double d = 0.5 * double(fluidLevel->y + fluidLevel2->y);
             const double q = __aquifer_getQ(i, d, j);
 
             return __aquifer_postCalculateDensityModified(ctx, q, mutableDoubleThingy);
@@ -1877,7 +1872,7 @@ aquifer_result_t __aquifer_applyPost(const sample_int32_ctx_t ctx, const double 
             .needsFluidTick = true,
         };
     } else {
-        double mutableDoubleThingy = nan((uint64_t) 0);
+        double mutableDoubleThingy = nan(uint64_t(0));
         global const aquifer_fluidlevel_t *fluidLevel3 = &waterLevels[math_aquifer_unpackPackedPosIdx(packedRes[1])];
         double e = d * __aquifer_calculateDensityModified(ctx, fluidLevel2, fluidLevel3, &mutableDoubleThingy);
         if (density + e > 0.0) {
@@ -1979,7 +1974,7 @@ int32_t ore_vein_sample(const sample_int32_ctx_t ctx) {
     int32_t k = ctx.y - veinType->minY;
     if (k >= 0 && j >= 0) {
         int32_t l = min(j, k);
-        double f = math_clampedMap((double)l, 0.0, 20.0, -0.2, 0.0);
+        double f = math_clampedMap(double(l), 0.0, 20.0, -0.2, 0.0);
         if (e + f < 0.4F) {
             return BLOCK_NULL;
         } else {
@@ -1991,7 +1986,7 @@ int32_t ore_vein_sample(const sample_int32_ctx_t ctx) {
                 return BLOCK_NULL;
             } else {
                 double g = math_clampedMap(e, 0.4F, 0.6F, 0.1F, 0.3F);
-                if ((double) random_state_nextFloat(&randomState) < g && df_binding_vein_gap(ctx) > -0.3F) {
+                if (double(random_state_nextFloat)(&randomState) < g && df_binding_vein_gap(ctx) > -0.3F) {
                     return random_state_nextFloat(&randomState) < 0.02F ? veinType->rawOreBlock : veinType->ore;
                 } else {
                     return veinType->stone;
@@ -2041,7 +2036,7 @@ kernel void df_noise_kernel(uint64_t const_data, uint64_t rw_data, global uint8_
         blockState = params->genConfig_defaultBlock;
     }
     uint32_t idx = ((relY) * sizeX + relZ) * sizeZ + relX;
-    res_blocks[idx] = ((uint8_t) blockState) | (aquifer_res.needsFluidTick ? (1U << 7) : 0);
+    res_blocks[idx] = (uint8_t(blockState)) | (aquifer_res.needsFluidTick ? (1U << 7) : 0);
 }
 #endif
 
@@ -2119,8 +2114,8 @@ __math_biome_search_tree_distance_func(global const biome_search_tree_node_t *  
     uint64_t res = 0;
 
     for (uint32_t i = 0; i < 7; i ++) {
-        int64_t l = (int32_t) target[i] - (int32_t) node->node_minmaxs.maxs[i];
-        int64_t m = (int32_t) node->node_minmaxs.mins[i] - (int32_t) target[i];
+        int64_t l = int32_t(target)[i] - int32_t(node)->node_minmaxs.maxs[i];
+        int64_t m = int32_t(node)->node_minmaxs.mins[i] - int32_t(target)[i];
         int64_t dist = l >= 0L ? l : max(m, 0L);
         res += dist * dist;
     }
@@ -2241,12 +2236,12 @@ kernel void df_biome_multinoise_kernel(uint64_t const_data, uint64_t rw_data,
     const double ridges = df_binding_ridges(ctx);
 
     const int16_t target[7] = {
-        convert_short_sat((int64_t) (((float) temperature) * 10000.0F)),
-        convert_short_sat((int64_t) (((float) vegetation) * 10000.0F)),
-        convert_short_sat((int64_t) (((float) continents) * 10000.0F)),
-        convert_short_sat((int64_t) (((float) erosion) * 10000.0F)),
-        convert_short_sat((int64_t) (((float) depth) * 10000.0F)),
-        convert_short_sat((int64_t) (((float) ridges) * 10000.0F)),
+        convert_short_sat((int64_t) ((float(temperature)) * 10000.0F)),
+        convert_short_sat((int64_t) ((float(vegetation)) * 10000.0F)),
+        convert_short_sat((int64_t) ((float(continents)) * 10000.0F)),
+        convert_short_sat((int64_t) ((float(erosion)) * 10000.0F)),
+        convert_short_sat((int64_t) ((float(depth)) * 10000.0F)),
+        convert_short_sat((int64_t) ((float(ridges)) * 10000.0F)),
         0,
     };
 
