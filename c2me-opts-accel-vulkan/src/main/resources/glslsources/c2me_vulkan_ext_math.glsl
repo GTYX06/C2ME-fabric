@@ -35,8 +35,8 @@
 
 #define UINT32_MAX 0xffffffffu
 #define INT32_MAX 0x7fffffff
-#define UINT64_MAX 0xffffffffffffffffu64
-#define INT64_MAX 0x7fffffffffffffff64
+#define UINT64_MAX 18446744073709551615u64
+#define INT64_MAX 9223372036854775807i64
 
 #ifndef NULL
 #define NULL 0u64
@@ -60,7 +60,12 @@ layout(buffer_reference, scalar) buffer RWDoubleRef { double val; };
 
 #define global
 #define local
+#define global
+#define local
 #define constant
+#define restrict
+#define kernel
+#define __attribute__(x)
 
 const double FLAT_SIMPLEX_GRAD[16][3] = {
         {1, 1, 0},
@@ -95,20 +100,20 @@ void nop() {
 #define nop()
 #endif
 
-void *ptr_shift(const void * const ptr, const int32_t shift) {
-    return (void *) (((uint8_t *) ptr) + shift);
+uint64_t ptr_shift(uint64_t ptr, const int32_t shift) {
+    return (uint64_t ) (((uint64_t) ptr) + shift);
 }
 
-const void *ptr_shift_const(const void * const ptr, const int32_t shift) {
-    return (const void *) (((const uint8_t *) ptr) + shift);
+uint64_t ptr_shift_const(uint64_t ptr, const int32_t shift) {
+    return (uint64_t ) (((uint64_t) ptr) + shift);
 }
 
-// local void *ptr_shift_local(local const void * const ptr, const int32_t shift) {
-//     return (local void *) (((local uint8_t *) ptr) + shift);
+// uint64_t ptr_shift_local(uint64_t ptr, const int32_t shift) {
+//     return (uint64_t ) (((uint64_t) ptr) + shift);
 // }
 
-global void *ptr_shift_global(global const void * const ptr, const int32_t shift) {
-    return (global void *) (((global uint8_t *) ptr) + shift);
+uint64_t ptr_shift_global(uint64_t ptr, const int32_t shift) {
+    return (uint64_t ) (((uint64_t) ptr) + shift);
 }
 
 double math_floor(const double v) {
@@ -777,7 +782,7 @@ math_aquifer_refreshDistPosIdx_global(global const uint16_t * const packedBlockP
 const uint32_t MASK_enableFlatCache = 1 << 0;
 const uint32_t MASK_enableAllCaches = (1 << 1) | MASK_enableFlatCache;
 
-global void *df_data_offset_global(global const void * const root, const int32_t index) {
+uint64_t df_data_offset_global(uint64_t root, const int32_t index) {
     int32_t offset = ((global int32_t *) ptr_shift_global(root, 128))[index];
     return offset ? ptr_shift_global(root, offset) : NULL;
 }
@@ -1192,13 +1197,13 @@ double df_structureWeightSampler_sample(global const float *  const structureWei
 }
 
 typedef struct sample_int32_ctx {
-    global const void *  const const_data;
-    global void *  const rw_data;
+    uint64_t const_data;
+    uint64_t rw_data;
     const int32_t x, y, z;
     const uint32_t sample_flags;
 } sample_int32_ctx_t;
 
-sample_int32_ctx_t make_sample_int32_ctx(global const void *  const const_data, global void *  const rw_data, const int32_t x, const int32_t y, const int32_t z, const uint32_t sample_flags) {
+sample_int32_ctx_t make_sample_int32_ctx(uint64_t const_data, uint64_t rw_data, const int32_t x, const int32_t y, const int32_t z, const uint32_t sample_flags) {
     return (sample_int32_ctx_t) {
         .const_data = const_data,
         .rw_data = rw_data,
@@ -1285,14 +1290,14 @@ df_binding_def(final_final_density)
 
 #undef df_binding_def
 
-int32_t chunkNoiseSampler_estimateSurfaceHeight0(global const void *  const const_data, global void *  const rw_data, const int32_t blockX, const int32_t blockZ) {
+int32_t chunkNoiseSampler_estimateSurfaceHeight0(uint64_t const_data, uint64_t rw_data, const int32_t blockX, const int32_t blockZ) {
     return math_floor(df_binding_preliminary_surface_level(make_sample_int32_ctx(const_data, rw_data, blockX, 0, blockZ, 0)));
 }
 
 // const int32_t CACHE_CHUNK_RADIUS_estimateSurfaceHeight = 4;
 // const int32_t CACHE_SIZE_estimateSurfaceHeight = (CACHE_CHUNK_RADIUS_estimateSurfaceHeight * 2 + 1) << 2;
 
-int32_t chunkNoiseSampler_estimateSurfaceHeight(global const void *  const const_data, global const void *  const rw_data, const int32_t blockX, const int32_t blockZ) {
+int32_t chunkNoiseSampler_estimateSurfaceHeight(uint64_t const_data, uint64_t rw_data, const int32_t blockX, const int32_t blockZ) {
     global const worldgen_params_t *params = rw_data;
     global const int32_t *cache = ptr_shift_global(rw_data, params->offset_estimateSurfaceHeight);
     int32_t biomeX = math_block2biome(blockX);
@@ -1315,7 +1320,7 @@ int32_t chunkNoiseSampler_estimateSurfaceHeight(global const void *  const const
 }
 
 #ifdef DF_COMPILE_ESTIMATE_SURFACE_HEIGHT
-kernel ) void chunkNoiseSampler_estimateSurfaceHeight_prefill_indep(global const void *  const const_data, global void *  const rw_data,
+kernel ) void chunkNoiseSampler_estimateSurfaceHeight_prefill_indep(uint64_t const_data, uint64_t rw_data,
                                                                                                                  global int32_t *  const cache,
                                                                                                                  const int32_t startChunkX, const int32_t startChunkZ, const uint32_t cacheWidth) {
     if (!const_data || !cache || !rw_data) {
@@ -1557,7 +1562,7 @@ const const int32_t __aquifer_chunkPosOffset[13][2] = {
     {0, 0}, {-2, -1}, {-1, -1}, {0, -1}, {1, -1}, {-3, 0}, {-2, 0}, {-1, 0}, {1, 0}, {-2, 1}, {-1, 1}, {0, 1}, {1, 1}
 };
 
-const global aquifer_fluidlevel_t *fluidLevelSampler_getFluidLevel_ptr(global const void *  const rw_data, const int32_t y) {
+const global aquifer_fluidlevel_t *fluidLevelSampler_getFluidLevel_ptr(uint64_t rw_data, const int32_t y) {
     global const worldgen_params_t *params = rw_data;
     global const aquifer_fluidlevel_t *fluidLevels = ptr_shift_global(rw_data, params->offset_fluidLevelSampler);
     const int32_t relY = y - genShapeCfg_minimumY;
@@ -1568,7 +1573,7 @@ bool math_VanillaBiomeParameters_inDeepDarkParameters(const sample_int32_ctx_t c
     return df_binding_erosion(ctx) < -0.225F && df_binding_depth(ctx) > 0.9F;
 }
 
-int32_t __aquifer_getNoiseBasedFluidLevel(global const void *  const const_data, int32_t blockX, int32_t blockY, int32_t blockZ, int32_t surfaceHeightEstimate) {
+int32_t __aquifer_getNoiseBasedFluidLevel(uint64_t const_data, int32_t blockX, int32_t blockY, int32_t blockZ, int32_t surfaceHeightEstimate) {
     int32_t i = 16;
     int32_t j = 40;
     int32_t k = blockX >> 4;
@@ -1584,7 +1589,7 @@ int32_t __aquifer_getNoiseBasedFluidLevel(global const void *  const const_data,
 
 const int32_t DimensionType_field_35479 = -32512; // copied from debugger
 
-int32_t __aquifer_getFluidBlockY(global const void *  const const_data, int32_t blockX, int32_t blockY, int32_t blockZ, global const aquifer_fluidlevel_t *defaultFluidLevel, int32_t surfaceHeightEstimate, bool bl) {
+int32_t __aquifer_getFluidBlockY(uint64_t const_data, int32_t blockX, int32_t blockY, int32_t blockZ, global const aquifer_fluidlevel_t *defaultFluidLevel, int32_t surfaceHeightEstimate, bool bl) {
     // DensityFunction.UnblendedNoisePos unblendedNoisePos = new DensityFunction.UnblendedNoisePos(blockX, blockY, blockZ);
     const sample_int32_ctx_t unblendedNoisePos = make_sample_int32_ctx(const_data, NULL, blockX, blockY, blockZ, 0);
     double d;
@@ -1612,7 +1617,7 @@ int32_t __aquifer_getFluidBlockY(global const void *  const const_data, int32_t 
     return i;
 }
 
-int32_t __aquifer_getFluidBlockState(global const void *  const const_data, int blockX, int blockY, int blockZ, global const aquifer_fluidlevel_t *defaultFluidLevel, int fluidLevel) {
+int32_t __aquifer_getFluidBlockState(uint64_t const_data, int blockX, int blockY, int blockZ, global const aquifer_fluidlevel_t *defaultFluidLevel, int fluidLevel) {
     int32_t blockState = defaultFluidLevel->blockState;
     if (fluidLevel <= -10 && fluidLevel != DimensionType_field_35479 && defaultFluidLevel->blockState != BLOCK_LAVA) {
         int i = 64;
@@ -1631,7 +1636,7 @@ int32_t __aquifer_getFluidBlockState(global const void *  const const_data, int 
 
 #ifdef DF_COMPILE_AQUIFER_PREFILL
 // launch with aquifer sizeX sizeY sizeZ
-kernel void aquifer_data_prefill(global const void *  const const_data, global const void *  const rw_data) {
+kernel void aquifer_data_prefill(uint64_t const_data, uint64_t rw_data) {
     if (!const_data || !rw_data) {
         #ifdef DEBUG
         printf("trap: !const_data || !rw_data\n const_data=%p rw_data=%p\n", const_data, rw_data);
@@ -2001,7 +2006,7 @@ int32_t ore_vein_sample(const sample_int32_ctx_t ctx) {
 #ifdef DF_COMPILE_NOISE_KERNEL
 // res_blocks: [relY][relZ][relX], sign bit incdicate needsFluidTick
 )
-kernel void df_noise_kernel(global const void *  const const_data, global void *  const rw_data, global uint8_t *res_blocks,
+kernel void df_noise_kernel(uint64_t const_data, uint64_t rw_data, global uint8_t *res_blocks,
                             const int32_t chunkX, const int32_t chunkZ) {
     if (!const_data || !rw_data || !res_blocks) {
         #ifdef DEBUG
@@ -2197,7 +2202,7 @@ extern const uint32_t biome_multinoise_tree_nodes_c;
 #ifdef DF_COMPILE_BIOME_MULTINOISE_KERNEL
 // res_blocks: [relY][relZ][relX]
 )
-kernel void df_biome_multinoise_kernel(global const void *  const const_data, global void *  const rw_data,
+kernel void df_biome_multinoise_kernel(uint64_t const_data, uint64_t rw_data,
                                        global uint32_t *  const res_biomes,
                                        const int32_t startBiomeX, const int32_t startBiomeZ, const int32_t startBiomeY,
                                        const uint32_t sizeX, const uint32_t sizeZ, const uint32_t sizeY) {
