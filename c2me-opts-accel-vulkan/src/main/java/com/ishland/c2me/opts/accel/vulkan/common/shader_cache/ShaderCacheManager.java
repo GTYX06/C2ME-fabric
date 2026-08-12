@@ -21,6 +21,7 @@ import com.ishland.c2me.opts.accel.vulkan.common.zstd.ZstdInputStreamNoFinalizer
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.shaderc.Shaderc;
 import org.slf4j.Logger;
@@ -117,14 +118,20 @@ public class ShaderCacheManager {
         Shaderc.shaderc_compile_options_set_target_env(options, Shaderc.shaderc_target_env_vulkan, Shaderc.shaderc_env_version_vulkan_1_2);
         Shaderc.shaderc_compile_options_set_optimization_level(options, Shaderc.shaderc_optimization_level_performance);
 
-        long result = Shaderc.shaderc_compile_into_spv(
-                compiler,
-                source,
-                Shaderc.shaderc_compute_shader,
-                fileName,
-                "main",
-                options
-        );
+        ByteBuffer sourceBuffer = MemoryUtil.memUTF8(source);
+        long result;
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            result = Shaderc.shaderc_compile_into_spv(
+                    compiler,
+                    sourceBuffer,
+                    Shaderc.shaderc_compute_shader,
+                    stack.UTF8(fileName),
+                    stack.UTF8("main"),
+                    options
+            );
+        } finally {
+            MemoryUtil.memFree(sourceBuffer);
+        }
 
         if (Shaderc.shaderc_result_get_compilation_status(result) != Shaderc.shaderc_compilation_status_success) {
             String errorMsg = Shaderc.shaderc_result_get_error_message(result);

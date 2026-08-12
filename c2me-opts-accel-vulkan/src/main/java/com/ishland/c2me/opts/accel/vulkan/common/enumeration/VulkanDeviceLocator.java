@@ -55,7 +55,8 @@ public class VulkanDeviceLocator {
     private static boolean initialized = false;
 
     public static synchronized boolean isAvailable() {
-        if (initialized) return vkInstance != null;
+        if (initialized)
+            return vkInstance != null;
         initialized = true;
         try {
             try {
@@ -63,6 +64,19 @@ public class VulkanDeviceLocator {
             } catch (IllegalStateException ignored) {
                 // Vulkan function provider has already been created
             }
+
+            int targetApiVersion = VK_API_VERSION_1_2;
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                IntBuffer pVersion = stack.mallocInt(1);
+                if (org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion(pVersion) == VK_SUCCESS) {
+                    int instanceVersion = pVersion.get(0);
+                    if (instanceVersion >= VK_API_VERSION_1_2) {
+                        targetApiVersion = instanceVersion;
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 VkApplicationInfo appInfo = VkApplicationInfo.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_APPLICATION_INFO)
@@ -70,7 +84,7 @@ public class VulkanDeviceLocator {
                         .applicationVersion(VK_MAKE_VERSION(1, 0, 0))
                         .pEngineName(stack.UTF8("C2ME"))
                         .engineVersion(VK_MAKE_VERSION(1, 0, 0))
-                        .apiVersion(VK_API_VERSION_1_2);
+                        .apiVersion(targetApiVersion);
 
                 VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO)
@@ -83,7 +97,8 @@ public class VulkanDeviceLocator {
                     return false;
                 }
                 vkInstance = new VkInstance(pInstance.get(0), createInfo);
-                LOGGER.info("Successfully initialized Vulkan 1.2 instance");
+                LOGGER.info("Successfully initialized Vulkan {}.{}.{} instance",
+                        targetApiVersion >>> 22, (targetApiVersion >>> 12) & 0x3FF, targetApiVersion & 0xFFF);
                 return true;
             }
         } catch (Throwable t) {
@@ -101,7 +116,8 @@ public class VulkanDeviceLocator {
 
     public static List<VulkanDeviceMetadata> enumerateAll() {
         List<VulkanDeviceMetadata> list = new ArrayList<>();
-        if (!isAvailable()) return list;
+        if (!isAvailable())
+            return list;
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer pCount = stack.mallocInt(1);
@@ -129,7 +145,19 @@ public class VulkanDeviceLocator {
 
                 String name = props.deviceNameString();
                 String vendor = String.format("0x%04x", props.vendorID());
-                String driverVersion = String.valueOf(props.driverVersion());
+
+                int driverVerInt = props.driverVersion();
+                String driverVersion;
+                if (props.vendorID() == 0x10DE) { // NVIDIA driver version format
+                    driverVersion = String.format("%d.%d", (driverVerInt >>> 22) & 0x3FF, (driverVerInt >>> 14) & 0xFF);
+                } else {
+                    driverVersion = String.format("%d.%d.%d", driverVerInt >>> 22, (driverVerInt >>> 12) & 0x3FF, driverVerInt & 0xFFF);
+                }
+
+                int devApiVer = props.apiVersion();
+                String apiVersionStr = String.format("%d.%d.%d", devApiVer >>> 22, (devApiVer >>> 12) & 0x3FF, devApiVer & 0xFFF);
+                LOGGER.info("Vulkan GPU Device found: {} (Vendor: {}, Vulkan API: {}, Driver: {})", name, vendor, apiVersionStr, driverVersion);
+
                 int deviceType = props.deviceType();
                 boolean isDiscrete = deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
                 boolean supportsVk12 = vulkan12Features.timelineSemaphore() && vulkan12Features.bufferDeviceAddress();
@@ -144,8 +172,7 @@ public class VulkanDeviceLocator {
                         uuid,
                         0L,
                         isDiscrete,
-                        supportsVk12
-                ));
+                        supportsVk12));
             }
         }
         return list;
