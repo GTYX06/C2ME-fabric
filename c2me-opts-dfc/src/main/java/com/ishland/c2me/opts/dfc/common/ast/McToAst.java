@@ -192,7 +192,7 @@ public class McToAst {
         REGISTRY.registerExactMatch(DensityFunctionTypes.Spline.class, f -> new Multi2SingleNode(new ToF64Node(toAst(f.getSpline()))));
         REGISTRY.registerExactMatch(DensityFunctionTypes.FindTopSurface.class, f -> new FindTopSurfaceNode(toAst(f.density()), toAst(f.upperBound()), new ConstantNode(f.lowerBound()), f.cellHeight()));
 
-        // delegate nodes that have specialized OpenCL gen
+        // delegate nodes that have specialized Vulkan gen
         REGISTRY.registerExactMatch(DensityFunctionTypes.EndIslands.class, EndIslandsNode::new);
         REGISTRY.registerExactMatch(InterpolatedNoiseSampler.class, InterpolatedNoiseSamplerNode::new);
         REGISTRY.registerExactMatch(DensityFunctionTypes.Beardifier.class, BeardifierNode::new);

@@ -57,7 +57,7 @@ public class GenDumper {
         return outputFile.getAbsoluteFile().toPath();
     }
 
-    public static Path dumpCL(String name, byte[] bytes) {
+    public static Path dumpGLSL(String name, byte[] bytes) {
         File outputFile = new File(exportDir, "cl/" + name + ".cl");
         outputFile.getParentFile().mkdirs();
         try {

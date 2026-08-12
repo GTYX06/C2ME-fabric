@@ -35,12 +35,12 @@ configure(allprojects) {
 
     license {
         include("**/*.java")
-        include("**/*.cl")
+        include("**/*.glsl")
 
-        headerCommentManager.register(dev.yumi.gradle.licenser.api.comment.CStyleHeaderComment.INSTANCE, "cl")
+        headerCommentManager.register(dev.yumi.gradle.licenser.api.comment.CStyleHeaderComment.INSTANCE, "glsl")
     }
 
-    if (it.name == "c2me-opts-accel-opencl") {
+    if (it.name == "c2me-opts-accel-vulkan") {
         license {
             rule(rootProject.file("licenses/LICENSE-ARR.txt"))
         }
@@ -224,7 +224,8 @@ configure (allprojects - project(":tests")) {
         // workaround loom issue for devlaunch
         afterEvaluate {
             minecraftServerRuntimeLibraries "org.lwjgl:lwjgl:${lwjgl_version}"
-            minecraftServerRuntimeLibraries "org.lwjgl:lwjgl-opencl:${lwjgl_version}"
+            minecraftServerRuntimeLibraries "org.lwjgl:lwjgl-vulkan:${lwjgl_version}"
+            minecraftServerRuntimeLibraries "org.lwjgl:lwjgl-shaderc:${lwjgl_version}"
             minecraftServerRuntimeLibraries "org.lwjgl:lwjgl-zstd:${lwjgl_version}"
             minecraftServerRuntimeLibraries("org.apache.commons:commons-compress:${apache_commons_compress_version}") {
                 transitive = false
@@ -312,16 +313,16 @@ publishMods {
             projectId = "533097"
         }
 
-        curseforge("curseforgeOpenCLAccel") {
+        curseforge("curseforgeVulkanAccel") {
             from cfOptions
-            file = project(":c2me-opts-accel-opencl").remapJar.archiveFile
+            file = project(":c2me-opts-accel-vulkan").remapJar.archiveFile
             projectId = "1563823"
             requires("c2me")
             requires("scalablelux")
         }
     }
 
-    {
+    if (true) {
         def mrOptions = modrinthOptions {
             accessToken = System.getenv("MODRINTH_TOKEN")
             minecraftVersions.add(project.minecraft_version)
@@ -333,9 +334,9 @@ publishMods {
             projectId = "VSNURh3q"
         }
 
-        modrinth("modrinthOpenCLAccel") {
+        modrinth("modrinthVulkanAccel") {
             from mrOptions
-            file = project(":c2me-opts-accel-opencl").remapJar.archiveFile
+            file = project(":c2me-opts-accel-vulkan").remapJar.archiveFile
             projectId = "qtPMklut"
             requires {
                 id = "VSNURh3q"
@@ -356,7 +357,7 @@ dependencies {
 
             def projectName = it.name
             api project(path: ":${projectName}", configuration: "namedElements")
-            if (projectName != "c2me-opts-accel-opencl" && projectName != "tests") {
+            if (projectName != "c2me-opts-accel-vulkan" && projectName != "tests") {
                 include project(":${projectName}")
             }
         }
