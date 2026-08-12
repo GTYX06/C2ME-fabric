@@ -33,13 +33,13 @@
 #define int64_t int64_t
 #define uint64_t uint64_t
 
-#define UINT32_MAX 0xffffffffU
+#define UINT32_MAX 0xffffffffu
 #define INT32_MAX 0x7fffffff
-#define UINT64_MAX 0xffffffffffffffffLU
-#define INT64_MAX 0x7fffffffffffffffLU
+#define UINT64_MAX 0xffffffffffffffffu64
+#define INT64_MAX 0x7fffffffffffffff64
 
 #ifndef NULL
-#define NULL 0UL
+#define NULL 0u64
 #endif
 
 // Scalar Buffer References for fast 64-bit pointer dereferencing
@@ -58,57 +58,11 @@ layout(buffer_reference, scalar) buffer RWUint32Ref { uint32_t val; };
 layout(buffer_reference, scalar) buffer RWFloatRef { float val; };
 layout(buffer_reference, scalar) buffer RWDoubleRef { double val; };
 
-/*
- * All Rights Reserved
- *
- * Copyright (c) 2025-2026 ishland
- *
- * All rights reserved. Do not redistribute.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+#define global
+#define local
+#define constant
 
-
-
-
-
-
-
-
-
-
-// #define DEBUG 1
-
-
-
-#ifndef NULL
-#define NULL (void *) 0L
-#endif
-
-#ifndef 
-#define  
-#endif
-
-#ifndef 
-#define  
-#endif
-
-#ifdef AVOID_TRAP
-#define __builtin_trap()
-#endif
-
-#define UINT32_MAX 0xffffffffU
-#define INT32_MAX 0x7fffffff
-#define UINT64_MAX 0xffffffffffffffffLU
-#define INT64_MAX 0x7fffffffffffffffLU
-
-) const double FLAT_SIMPLEX_GRAD[16][3] = {
+const double FLAT_SIMPLEX_GRAD[16][3] = {
         {1, 1, 0},
         {-1, 1, 0},
         {1, -1, 0},
