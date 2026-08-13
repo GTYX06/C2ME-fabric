@@ -216,8 +216,8 @@ int32_t math_block2biome(const int32_t blockCoord) {
 }
 
 uint32_t
-__math_simplex_map_global(global const uint32_t *  permutations, const int32_t input) {
-    return permutations[input & 0xFF];
+__math_simplex_map_global(uint64_t permutations, const int32_t input) {
+    return ConstUint32Ref(permutations + uint64_t((input & 0xFF) * 4)).val;
 }
 
 double math_simplex_dot(const int32_t hash, const double x, const double y,
@@ -242,7 +242,7 @@ double __math_simplex_grad(const int32_t hash, const double x, const double y,
 }
 
 double 
-math_noise_simplex_sample2d_global(global const uint32_t *  permutations, const double x, const double y) {
+math_noise_simplex_sample2d_global(uint64_t permutations, const double x, const double y) {
     const double d = (x + y) * SKEW_FACTOR_2D;
     const double i = math_floor(x + d);
     const double j = math_floor(y + d);
@@ -287,17 +287,17 @@ double math_perlinFade(const double value) {
 }
 
 // noinline to prevent broken optimizations on intel drivers
-double __math_perlin_grad_global(global const uint8_t *  permutations, const int32_t px,
+double __math_perlin_grad_global(uint64_t permutations, const int32_t px,
                                                                      const int32_t py, const int32_t pz, const double fx,
                                                                      const double fy, const double fz) {
-    const uint32_t map0 = ((uint32_t(permutations)[(uint32_t(px)) & 0xFF]) + (uint32_t(py)));
-    const uint32_t map1 = ((uint32_t(permutations)[map0 & 0xFF]) + (uint32_t(pz)));
-    const uint32_t hash = permutations[map1 & 0XFF] & 0xF;
+    const uint32_t map0 = uint32_t(ConstByteRef(permutations + uint64_t(px & 0xFF)).val) + uint32_t(py);
+    const uint32_t map1 = uint32_t(ConstByteRef(permutations + uint64_t(map0 & 0xFF)).val) + uint32_t(pz);
+    const uint32_t hash = uint32_t(ConstByteRef(permutations + uint64_t(map1 & 0xFF)).val) & 0xFU;
     return FLAT_SIMPLEX_GRAD[hash][0] * fx + FLAT_SIMPLEX_GRAD[hash][1] * fy + FLAT_SIMPLEX_GRAD[hash][2] * fz;
 }
 
 double
-math_noise_perlin_sampleScalar_global(global const uint8_t *  permutations,
+math_noise_perlin_sampleScalar_global(uint64_t permutations,
                                       const int32_t px0, const int32_t py0, const int32_t pz0,
                                       const double fx0, const double fy0, const double fz0, const double fadeLocalY) {
     const int32_t px1 = px0 + 1;
@@ -323,7 +323,7 @@ math_noise_perlin_sampleScalar_global(global const uint8_t *  permutations,
 }
 
 double
-math_noise_perlin_sample_global(global const uint8_t *  permutations,
+math_noise_perlin_sample_global(uint64_t permutations,
                                 const double originX, const double originY, const double originZ,
                                 const double x, const double y, const double z,
                                 const double yScale, const double yMax) {
@@ -524,7 +524,7 @@ math_noise_perlin_interpolated_sample_global_noinline(global const interpolated_
 }
 
 float
-math_end_islands_sample_global(global const uint32_t *  simplex_permutations, const int32_t x, const int32_t z) {
+math_end_islands_sample_global(uint64_t simplex_permutations, const int32_t x, const int32_t z) {
     const int32_t i = x / 2;
     const int32_t j = z / 2;
     const int32_t k = x % 2;
