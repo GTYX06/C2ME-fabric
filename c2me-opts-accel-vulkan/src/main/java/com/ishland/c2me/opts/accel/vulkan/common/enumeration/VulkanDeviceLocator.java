@@ -160,7 +160,10 @@ public class VulkanDeviceLocator {
 
                 int deviceType = props.deviceType();
                 boolean isDiscrete = deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-                boolean supportsVk12 = vulkan12Features.timelineSemaphore() && vulkan12Features.bufferDeviceAddress();
+                boolean supportsVk12 = vulkan12Features.timelineSemaphore()
+                        && vulkan12Features.bufferDeviceAddress()
+                        && features2.features().shaderFloat64()
+                        && features2.features().shaderInt64();
 
                 UUID uuid = UUID.nameUUIDFromBytes(name.getBytes());
                 list.add(new VulkanDeviceMetadata(

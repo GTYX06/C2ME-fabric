@@ -20,6 +20,8 @@
 #extension GL_EXT_shader_explicit_arithmetic_types_int32 : enable
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable
 #extension GL_EXT_shader_explicit_arithmetic_types_float64 : enable
+#extension GL_ARB_gpu_shader_int64 : enable
+#extension GL_ARB_gpu_shader_fp64 : enable
 #extension GL_EXT_scalar_block_layout : enable
 #extension GL_EXT_buffer_reference : enable
 #extension GL_EXT_buffer_reference2 : enable
@@ -58,8 +60,6 @@ layout(buffer_reference, scalar) buffer RWUint32Ref { uint32_t val; };
 layout(buffer_reference, scalar) buffer RWFloatRef { float val; };
 layout(buffer_reference, scalar) buffer RWDoubleRef { double val; };
 
-#define global
-#define local
 #define global
 #define local
 #define constant

@@ -127,6 +127,9 @@ public class VulkanDevice implements Closeable {
             VkPhysicalDeviceFeatures2 features2 = VkPhysicalDeviceFeatures2.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
                     .pNext(vulkan12Features);
+            features2.features()
+                    .shaderFloat64(true)
+                    .shaderInt64(true);
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
