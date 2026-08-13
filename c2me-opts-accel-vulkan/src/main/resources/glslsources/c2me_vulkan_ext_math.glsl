@@ -59,11 +59,8 @@ layout(buffer_reference, scalar) buffer RWInt32Ref { int32_t val; };
 layout(buffer_reference, scalar) buffer RWUint32Ref { uint32_t val; };
 layout(buffer_reference, scalar) buffer RWFloatRef { float val; };
 layout(buffer_reference, scalar) buffer RWDoubleRef { double val; };
+layout(buffer_reference, scalar) buffer RWUint64Ref { uint64_t val; };
 
-#define global
-#define local
-#define constant
-#define restrict
 #define kernel
 #define convert_short_sat(x) int16_t(clamp(int64_t(x), -32768L, 32767L))
 
@@ -357,40 +354,40 @@ uint64_t length;
 };
 
 double
-math_noise_perlin_double_octave_sample_impl_global(global const double_octave_sampler_data_t *  const data,
+math_noise_perlin_double_octave_sample_impl_global(double_octave_sampler_data_t data,
                                                    const double x, const double y, const double z,
                                                    const double yScale, const double yMax, const uint8_t useOrigin) {
     double d1 = 0.0;
     double d2 = 0.0;
 
-    global const bool *const need_shift = ptr_shift_global(data, data.need_shift);
-    global const double *lacunarity_powd = ptr_shift_global(data, data.lacunarity_powd);
-    global const double *persistence_powd = ptr_shift_global(data, data.persistence_powd);
-    global const uint8_t *sampler_permutations = ptr_shift_global(data, data.sampler_permutations);
-    global const double *sampler_originX = ptr_shift_global(data, data.sampler_originX);
-    global const double *sampler_originY = ptr_shift_global(data, data.sampler_originY);
-    global const double *sampler_originZ = ptr_shift_global(data, data.sampler_originZ);
-    global const double *amplitudes = ptr_shift_global(data, data.amplitudes);
+    uint64_t need_shift = ptr_shift_global(uint64_t(data), data.need_shift);
+    uint64_t lacunarity_powd = ptr_shift_global(uint64_t(data), data.lacunarity_powd);
+    uint64_t persistence_powd = ptr_shift_global(uint64_t(data), data.persistence_powd);
+    uint64_t sampler_permutations = ptr_shift_global(uint64_t(data), data.sampler_permutations);
+    uint64_t sampler_originX = ptr_shift_global(uint64_t(data), data.sampler_originX);
+    uint64_t sampler_originY = ptr_shift_global(uint64_t(data), data.sampler_originY);
+    uint64_t sampler_originZ = ptr_shift_global(uint64_t(data), data.sampler_originZ);
+    uint64_t amplitudes = ptr_shift_global(uint64_t(data), data.amplitudes);
 
     for (uint32_t i = 0; i < data.length; i++) {
-        const double e = lacunarity_powd[i];
-        const double f = persistence_powd[i];
-        global const uint8_t *permutations = sampler_permutations + 256 * i;
-        const double sampleX = need_shift[i] ? x * 1.0181268882175227 : x;
-        const double sampleY = need_shift[i] ? y * 1.0181268882175227 : y;
-        const double sampleZ = need_shift[i] ? z * 1.0181268882175227 : z;
+        const double e = ConstDoubleRef(lacunarity_powd + uint64_t(i * 8)).val;
+        const double f = ConstDoubleRef(persistence_powd + uint64_t(i * 8)).val;
+        uint64_t permutations = sampler_permutations + 256 * i;
+        const double sampleX = (ConstByteRef(need_shift + uint64_t(i)).val != 0) ? x * 1.0181268882175227 : x;
+        const double sampleY = (ConstByteRef(need_shift + uint64_t(i)).val != 0) ? y * 1.0181268882175227 : y;
+        const double sampleZ = (ConstByteRef(need_shift + uint64_t(i)).val != 0) ? z * 1.0181268882175227 : z;
         const double g = math_noise_perlin_sample_global(
                 permutations,
-                sampler_originX[i],
-                sampler_originY[i],
-                sampler_originZ[i],
+                ConstDoubleRef(sampler_originX + uint64_t(i * 8)).val,
+                ConstDoubleRef(sampler_originY + uint64_t(i * 8)).val,
+                ConstDoubleRef(sampler_originZ + uint64_t(i * 8)).val,
                 math_octave_maintainPrecision(sampleX * e),
-                useOrigin ? -(sampler_originY[i]) : math_octave_maintainPrecision(sampleY * e),
+                useOrigin ? -(ConstDoubleRef(sampler_originY + uint64_t(i * 8)).val) : math_octave_maintainPrecision(sampleY * e),
                 math_octave_maintainPrecision(sampleZ * e),
                 yScale * e,
                 yMax * e);
-        const double d = amplitudes[i] * g * f;
-        if (!need_shift[i]) {
+        const double d = ConstDoubleRef(amplitudes + uint64_t(i * 8)).val * g * f;
+        if (!(ConstByteRef(need_shift + uint64_t(i)).val != 0)) {
             d1 += d;
         } else {
             d2 += d;
@@ -401,13 +398,13 @@ math_noise_perlin_double_octave_sample_impl_global(global const double_octave_sa
 }
 
 double
-math_noise_perlin_double_octave_sample_global_noinline(global const double_octave_sampler_data_t *  const data,
+math_noise_perlin_double_octave_sample_global_noinline(double_octave_sampler_data_t data,
                                                        const double x, const double y, const double z) {
     return math_noise_perlin_double_octave_sample_impl_global(data, x, y, z, 0.0, 0.0, 0);
 }
 
 double
-math_noise_perlin_double_octave_sample_global(global const double_octave_sampler_data_t *  const data,
+math_noise_perlin_double_octave_sample_global(double_octave_sampler_data_t data,
                                               const double x, const double y, const double z) {
     return math_noise_perlin_double_octave_sample_impl_global(data, x, y, z, 0.0, 0.0, 0);
 }
@@ -436,7 +433,7 @@ double scaledXzScale;
 };
 
 double
-math_noise_perlin_interpolated_sample_global(global const interpolated_noise_sampler_t *  const data,
+math_noise_perlin_interpolated_sample_global(interpolated_noise_sampler_t data,
                                              const double x, const double y, const double z) {
     const double d = x * data.scaledXzScale;
     const double e = y * data.scaledYScale;
@@ -451,22 +448,23 @@ math_noise_perlin_interpolated_sample_global(global const interpolated_noise_sam
     double n = 0.0;
 
     for (uint32_t offset = 0; offset < data.normal.length; offset++) {
-        global const uint8_t *sampler_permutations = ptr_shift_global(data, data.normal.sampler_permutations);
-        global const double *sampler_originX = ptr_shift_global(data, data.normal.sampler_originX);
-        global const double *sampler_originY = ptr_shift_global(data, data.normal.sampler_originY);
-        global const double *sampler_originZ = ptr_shift_global(data, data.normal.sampler_originZ);
-        global const double *sampler_mulFactor = ptr_shift_global(data, data.normal.sampler_mulFactor);
+        uint64_t sampler_permutations = ptr_shift_global(uint64_t(data), data.normal.sampler_permutations);
+        uint64_t sampler_originX = ptr_shift_global(uint64_t(data), data.normal.sampler_originX);
+        uint64_t sampler_originY = ptr_shift_global(uint64_t(data), data.normal.sampler_originY);
+        uint64_t sampler_originZ = ptr_shift_global(uint64_t(data), data.normal.sampler_originZ);
+        uint64_t sampler_mulFactor = ptr_shift_global(uint64_t(data), data.normal.sampler_mulFactor);
+        double mf = ConstDoubleRef(sampler_mulFactor + uint64_t(offset * 8)).val;
         n += math_noise_perlin_sample_global(
                 sampler_permutations + 256 * offset,
-                sampler_originX[offset],
-                sampler_originY[offset],
-                sampler_originZ[offset],
-                math_octave_maintainPrecision(g * sampler_mulFactor[offset]),
-                math_octave_maintainPrecision(h * sampler_mulFactor[offset]),
-                math_octave_maintainPrecision(i * sampler_mulFactor[offset]),
-                k * sampler_mulFactor[offset],
-                h * sampler_mulFactor[offset]
-        ) / sampler_mulFactor[offset];
+                ConstDoubleRef(sampler_originX + uint64_t(offset * 8)).val,
+                ConstDoubleRef(sampler_originY + uint64_t(offset * 8)).val,
+                ConstDoubleRef(sampler_originZ + uint64_t(offset * 8)).val,
+                math_octave_maintainPrecision(g * mf),
+                math_octave_maintainPrecision(h * mf),
+                math_octave_maintainPrecision(i * mf),
+                k * mf,
+                h * mf
+        ) / mf;
     }
 
     const double q = (n / 10.0 + 1.0) / 2.0;
@@ -475,43 +473,45 @@ math_noise_perlin_interpolated_sample_global(global const interpolated_noise_sam
 
     if (!bl2) {
         for (uint32_t offset = 0; offset < data.lower.length; offset++) {
-            global const uint8_t *sampler_permutations = ptr_shift_global(data, data.lower.sampler_permutations);
-            global const double *sampler_originX = ptr_shift_global(data, data.lower.sampler_originX);
-            global const double *sampler_originY = ptr_shift_global(data, data.lower.sampler_originY);
-            global const double *sampler_originZ = ptr_shift_global(data, data.lower.sampler_originZ);
-            global const double *sampler_mulFactor = ptr_shift_global(data, data.lower.sampler_mulFactor);
+            uint64_t sampler_permutations = ptr_shift_global(uint64_t(data), data.lower.sampler_permutations);
+            uint64_t sampler_originX = ptr_shift_global(uint64_t(data), data.lower.sampler_originX);
+            uint64_t sampler_originY = ptr_shift_global(uint64_t(data), data.lower.sampler_originY);
+            uint64_t sampler_originZ = ptr_shift_global(uint64_t(data), data.lower.sampler_originZ);
+            uint64_t sampler_mulFactor = ptr_shift_global(uint64_t(data), data.lower.sampler_mulFactor);
+            double mf = ConstDoubleRef(sampler_mulFactor + uint64_t(offset * 8)).val;
             l += math_noise_perlin_sample_global(
                     sampler_permutations + 256 * offset,
-                    sampler_originX[offset],
-                    sampler_originY[offset],
-                    sampler_originZ[offset],
-                    math_octave_maintainPrecision(d * sampler_mulFactor[offset]),
-                    math_octave_maintainPrecision(e * sampler_mulFactor[offset]),
-                    math_octave_maintainPrecision(f * sampler_mulFactor[offset]),
-                    j * sampler_mulFactor[offset],
-                    e * sampler_mulFactor[offset]
-            ) / sampler_mulFactor[offset];
+                    ConstDoubleRef(sampler_originX + uint64_t(offset * 8)).val,
+                    ConstDoubleRef(sampler_originY + uint64_t(offset * 8)).val,
+                    ConstDoubleRef(sampler_originZ + uint64_t(offset * 8)).val,
+                    math_octave_maintainPrecision(d * mf),
+                    math_octave_maintainPrecision(e * mf),
+                    math_octave_maintainPrecision(f * mf),
+                    j * mf,
+                    e * mf
+            ) / mf;
         }
     }
 
     if (!bl3) {
         for (uint32_t offset = 0; offset < data.upper.length; offset++) {
-            global const uint8_t *sampler_permutations = ptr_shift_global(data, data.upper.sampler_permutations);
-            global const double *sampler_originX = ptr_shift_global(data, data.upper.sampler_originX);
-            global const double *sampler_originY = ptr_shift_global(data, data.upper.sampler_originY);
-            global const double *sampler_originZ = ptr_shift_global(data, data.upper.sampler_originZ);
-            global const double *sampler_mulFactor = ptr_shift_global(data, data.upper.sampler_mulFactor);
+            uint64_t sampler_permutations = ptr_shift_global(uint64_t(data), data.upper.sampler_permutations);
+            uint64_t sampler_originX = ptr_shift_global(uint64_t(data), data.upper.sampler_originX);
+            uint64_t sampler_originY = ptr_shift_global(uint64_t(data), data.upper.sampler_originY);
+            uint64_t sampler_originZ = ptr_shift_global(uint64_t(data), data.upper.sampler_originZ);
+            uint64_t sampler_mulFactor = ptr_shift_global(uint64_t(data), data.upper.sampler_mulFactor);
+            double mf = ConstDoubleRef(sampler_mulFactor + uint64_t(offset * 8)).val;
             m += math_noise_perlin_sample_global(
                     sampler_permutations + 256 * offset,
-                    sampler_originX[offset],
-                    sampler_originY[offset],
-                    sampler_originZ[offset],
-                    math_octave_maintainPrecision(d * sampler_mulFactor[offset]),
-                    math_octave_maintainPrecision(e * sampler_mulFactor[offset]),
-                    math_octave_maintainPrecision(f * sampler_mulFactor[offset]),
-                    j * sampler_mulFactor[offset],
-                    e * sampler_mulFactor[offset]
-            ) / sampler_mulFactor[offset];
+                    ConstDoubleRef(sampler_originX + uint64_t(offset * 8)).val,
+                    ConstDoubleRef(sampler_originY + uint64_t(offset * 8)).val,
+                    ConstDoubleRef(sampler_originZ + uint64_t(offset * 8)).val,
+                    math_octave_maintainPrecision(d * mf),
+                    math_octave_maintainPrecision(e * mf),
+                    math_octave_maintainPrecision(f * mf),
+                    j * mf,
+                    e * mf
+            ) / mf;
         }
     }
 
@@ -519,8 +519,8 @@ math_noise_perlin_interpolated_sample_global(global const interpolated_noise_sam
 }
 
 double
-math_noise_perlin_interpolated_sample_global_noinline(global const interpolated_noise_sampler_t *  const data,
-                                                      const double x, const double y, const double z) {
+math_noise_perlin_interpolated_sample_global_noinline(interpolated_noise_sampler_t data,
+                                                       const double x, const double y, const double z) {
     return math_noise_perlin_interpolated_sample_global(data, x, y, z);
 }
 
@@ -667,7 +667,7 @@ int32_t startX;
 };
 
 uint32_t
-math_aquifer_index_global(global const aquifer_data_t * const aquiferData, const int32_t x, const int32_t y,
+math_aquifer_index_global(uint64_t aquiferData, const int32_t x, const int32_t y,
                           const int32_t z) {
     int i = x - aquiferData.startX;
     int j = y - aquiferData.startY;
@@ -710,8 +710,8 @@ math_aquifer_unpackPackedPosIdx(uint64_t packed) {
 }
 
 void
-math_aquifer_refreshDistPosIdx_global(global const uint16_t * const packedBlockPositions, uint64_t * const res,
-                                      global const aquifer_data_t * const aquiferData,
+math_aquifer_refreshDistPosIdx_global(uint64_t packedBlockPositions, uint64_t res,
+                                      uint64_t aquiferData,
                                       const int32_t x, const int32_t y, const int32_t z) {
     int32_t gx = (x - 5) >> 4;
     int32_t gy = math_floorDiv(y + 1, 12) - 1;
@@ -731,7 +731,7 @@ math_aquifer_refreshDistPosIdx_global(global const uint16_t * const packedBlockP
 
             uint64_t index0 = index - 1;
             uint32_t posIdx0 = math_aquifer_index_global(aquiferData, gx, gy + offY, gz + offZ);
-            uint32_t position0 = packedBlockPositions[posIdx0];
+            uint32_t position0 = uint32_t(ConstUint16Ref(packedBlockPositions + uint64_t(posIdx0 * 2)).val);
             int32_t dx0 = (gx << 4) + math_aquifer_unpackPackedX(position0) - x;
             int32_t dy0 = gymul + math_aquifer_unpackPackedY(position0) - y;
             int32_t dz0 = gzmul + math_aquifer_unpackPackedZ(position0) - z;
@@ -739,7 +739,7 @@ math_aquifer_refreshDistPosIdx_global(global const uint16_t * const packedBlockP
 
             uint64_t index1 = index - 2;
             uint32_t posIdx1 = posIdx0 + 1;
-            uint32_t position1 = packedBlockPositions[posIdx1];
+            uint32_t position1 = uint32_t(ConstUint16Ref(packedBlockPositions + uint64_t(posIdx1 * 2)).val);
             int32_t dx1 = ((gx + 1) << 4) + math_aquifer_unpackPackedX(position1) - x;
             int32_t dy1 = gymul + math_aquifer_unpackPackedY(position1) - y;
             int32_t dz1 = gzmul + math_aquifer_unpackPackedZ(position1) - z;
@@ -769,18 +769,18 @@ math_aquifer_refreshDistPosIdx_global(global const uint16_t * const packedBlockP
         }
     }
 
-    res[0] = A;
-    res[1] = B;
-    res[2] = C;
-    res[3] = D;
+    RWUint64Ref(res + uint64_t(0)).val = A;
+    RWUint64Ref(res + uint64_t(8)).val = B;
+    RWUint64Ref(res + uint64_t(16)).val = C;
+    RWUint64Ref(res + uint64_t(24)).val = D;
 }
 
 const uint32_t MASK_enableFlatCache = 1 << 0;
 const uint32_t MASK_enableAllCaches = (1 << 1) | MASK_enableFlatCache;
 
 uint64_t df_data_offset_global(uint64_t root, const int32_t index) {
-    int32_t offset = ((global int32_t *) ptr_shift_global(root, 128))[index];
-    return offset ? ptr_shift_global(root, offset) : NULL;
+    int32_t offset = ConstInt32Ref(ptr_shift_global(root, 128) + uint64_t(index * 4)).val;
+    return offset != 0 ? ptr_shift_global(root, offset) : NULL;
 }
 
 double math_clampedMap(const double value, const double oldStart, const double oldEnd, const double newStart, const double newEnd) {
@@ -848,7 +848,7 @@ int32_t cellRelX;
     int32_t cellBlockZ;
 };
 
-interpolation_pos_t df_get_interpolation_pos(global const worldgen_params_t *  params, const int32_t x, const int32_t y, const int32_t z) {
+interpolation_pos_t df_get_interpolation_pos(uint64_t params, const int32_t x, const int32_t y, const int32_t z) {
     int32_t cellRelX = math_floorDiv(x, genShapeCfg_horizontalCellBlockCount()) - params.startCellX;
     int32_t cellRelY = math_floorDiv(y, genShapeCfg_verticalCellBlockCount()) - params.startCellY;
     int32_t cellRelZ = math_floorDiv(z, genShapeCfg_horizontalCellBlockCount()) - params.startCellZ;
@@ -873,7 +873,7 @@ interpolation_pos_t df_get_interpolation_pos(global const worldgen_params_t *  p
     };
 }
 
-uint32_t df_address_flatcache_buffer(global const worldgen_params_t *  params, const uint32_t cacheIndex, const uint32_t offsetX, const uint32_t offsetZ) {
+uint32_t df_address_flatcache_buffer(uint64_t params, const uint32_t cacheIndex, const uint32_t offsetX, const uint32_t offsetZ) {
     if (offsetX > params.sizeBiomeX || offsetZ > params.sizeBiomeZ) {
         #ifdef DEBUG
         printf("trap: offsetX > params.sizeBiomeX || offsetZ > params.sizeBiomeZ\n offsetX=%d offsetZ=%d params.sizeBiomeX=%d params.sizeBiomeZ=%d\n", offsetX, offsetZ, params.sizeBiomeX, params.sizeBiomeZ);
@@ -885,7 +885,7 @@ uint32_t df_address_flatcache_buffer(global const worldgen_params_t *  params, c
     return ((cacheIndex) * (params.sizeBiomeX + 1) + offsetX) * (params.sizeBiomeZ + 1) + offsetZ;
 }
 
-uint32_t df_address_cache2d_buffer(global const worldgen_params_t *  params, const uint32_t cacheIndex, const uint32_t offsetX, const uint32_t offsetZ) {
+uint32_t df_address_cache2d_buffer(uint64_t params, const uint32_t cacheIndex, const uint32_t offsetX, const uint32_t offsetZ) {
     if (offsetX >= params.cache2d_sizeX || offsetZ >= params.cache2d_sizeZ) {
         #ifdef DEBUG
         printf("trap: offsetX >= params.cache2d_sizeX || offsetZ >= params.cache2d_sizeZ\n offsetX=%d offsetZ=%d params.cache2d_sizeX=%d params.cache2d_sizeZ=%d\n", offsetX, offsetZ, params.cache2d_sizeX, params.cache2d_sizeZ);
@@ -897,7 +897,7 @@ uint32_t df_address_cache2d_buffer(global const worldgen_params_t *  params, con
     return ((cacheIndex) * (params.cache2d_sizeX) + offsetX) * (params.cache2d_sizeZ) + offsetZ;
 }
 
-uint32_t df_address_interpolator_buffer(global const worldgen_params_t *  params, const uint32_t cacheIndex, const int32_t cellX, const int32_t cellY, const int32_t cellZ) {
+uint32_t df_address_interpolator_buffer(uint64_t params, const uint32_t cacheIndex, const int32_t cellX, const int32_t cellY, const int32_t cellZ) {
     if (cellX < 0 || cellY < 0 || cellZ < 0 || cellX > params.sizeCellX || cellY > params.sizeCellY || cellZ > params.sizeCellZ) {
         #ifdef DEBUG
         printf("trap: cellX < 0 || cellY < 0 || cellZ < 0 || cellX > params.sizeCellX || cellY > params.sizeCellY || cellZ > params.sizeCellZ\n cellX=%d cellY=%d cellZ=%d params.sizeCellX=%d params.sizeCellY=%d params.sizeCellZ=%d\n", cellX, cellY, cellZ, params.sizeCellX, params.sizeCellY, params.sizeCellZ);
@@ -914,7 +914,7 @@ bool cached;
     double res;
 };
 
-cache_result_t df_cachelike_interpolator(global const worldgen_params_t *  params, global const double *  interpolator_buffer, const uint32_t cacheIndex, const int32_t x, const int32_t y, const int32_t z, const uint32_t interpolationState) {
+cache_result_t df_cachelike_interpolator(uint64_t params, uint64_t interpolator_buffer, const uint32_t cacheIndex, const int32_t x, const int32_t y, const int32_t z, const uint32_t interpolationState) {
     if (!params || (interpolationState & MASK_enableAllCaches) != MASK_enableAllCaches) {
         return (cache_result_t) { .cached = false, .res = nan(uint64_t(0)) };
     }
@@ -947,7 +947,7 @@ cache_result_t df_cachelike_interpolator(global const worldgen_params_t *  param
     return (cache_result_t) { .cached = true, .res = res };
 }
 
-cache_result_t df_cachelike_flatcache(global const worldgen_params_t *  params, global const double *  data, const uint32_t cacheIndex, const int32_t x, const int32_t y, const int32_t z, const uint32_t interpolationState) {
+cache_result_t df_cachelike_flatcache(uint64_t params, uint64_t data, const uint32_t cacheIndex, const int32_t x, const int32_t y, const int32_t z, const uint32_t interpolationState) {
     if (!params || (interpolationState & MASK_enableFlatCache) != MASK_enableFlatCache) {
         return (cache_result_t) { .cached = false, .res = nan(uint64_t(0)) };
     }
@@ -961,7 +961,7 @@ cache_result_t df_cachelike_flatcache(global const worldgen_params_t *  params, 
     }
 }
 
-cache_result_t df_cachelike_cache2d(global const worldgen_params_t *  params, global const double *  data, const uint32_t cacheIndex, const int32_t x, const int32_t y, const int32_t z, const uint32_t interpolationState) {
+cache_result_t df_cachelike_cache2d(uint64_t params, uint64_t data, const uint32_t cacheIndex, const int32_t x, const int32_t y, const int32_t z, const uint32_t interpolationState) {
     if (!params || (interpolationState & MASK_enableAllCaches) != MASK_enableAllCaches) {
         return (cache_result_t) { .cached = false, .res = nan(uint64_t(0)) };
     }
@@ -997,7 +997,7 @@ double df_caveScaler_scaleTunnels(const double value) {
     }
 }
 
-int32_t df_spline_findRangeForLocation(const float * const locations, const uint32_t locations_len, const float x) {
+int32_t df_spline_findRangeForLocation(uint64_t locations, const uint32_t locations_len, const float x) {
     int32_t min = 0;
     int32_t i = locations_len;
 
@@ -1015,7 +1015,7 @@ int32_t df_spline_findRangeForLocation(const float * const locations, const uint
     return min - 1;
 }
 
-int32_t df_spline_findRangeForLocation_const(const float * const locations, const uint32_t locations_len, const float x) {
+int32_t df_spline_findRangeForLocation_const(uint64_t locations, const uint32_t locations_len, const float x) {
     int32_t min = 0;
     int32_t i = locations_len;
 
@@ -1033,12 +1033,12 @@ int32_t df_spline_findRangeForLocation_const(const float * const locations, cons
     return min - 1;
 }
 
-float df_spline_sampleOutsideRange(const float point, const float * const locations, const float value, const float * const derivatives, const int i) {
+float df_spline_sampleOutsideRange(const float point, uint64_t locations, const float value, uint64_t derivatives, const int i) {
     float f = derivatives[i];
     return f == 0.0F ? value : value + f * (point - locations[i]);
 }
 
-float df_spline_sampleOutsideRange_const(const float point, const float * const locations, const float value, const float * const derivatives, const int i) {
+float df_spline_sampleOutsideRange_const(const float point, uint64_t locations, const float value, uint64_t derivatives, const int i) {
     float f = derivatives[i];
     return f == 0.0F ? value : value + f * (point - locations[i]);
 }
@@ -1102,7 +1102,7 @@ double math_fastInverseSqrt(double a) {
     return x.d * (1.5 - d * x.d * x.d);
 }
 
-double df_structureWeightSampler_getStructureWeight_impl(global const float *  const structureWeightSamplerTable, const double x, const double y, const double z, const double yy) {
+double df_structureWeightSampler_getStructureWeight_impl(uint64_t structureWeightSamplerTable, const double x, const double y, const double z, const double yy) {
     int32_t i = x + 12;
     int32_t j = y + 12;
     int32_t k = z + 12;
@@ -1117,30 +1117,30 @@ double df_structureWeightSampler_getStructureWeight_impl(global const float *  c
     }
 }
 
-double df_structureWeightSampler_sample(global const float *  const structureWeightSamplerTable, global const sws_index_t *  const data_index, const int32_t x, const int32_t y, const int32_t z) {
+double df_structureWeightSampler_sample(uint64_t structureWeightSamplerTable, uint64_t data_index, const int32_t x, const int32_t y, const int32_t z) {
     const int32_t chunkX = x >> 4;
     const int32_t chunkZ = z >> 4;
     const uint32_t dataRelX = uint32_t(clamp)(chunkX - data_index.startX, 0, int32_t(data_index)->sizeX - 1);
     const uint32_t dataRelZ = uint32_t(clamp)(chunkZ - data_index.startZ, 0, int32_t(data_index)->sizeZ - 1);
-    global const uint32_t *  const sws_data_offsets = ptr_shift_global(data_index, sizeof(sws_index_t));
-    const uint32_t sws_current_offset = sws_data_offsets[dataRelX * data_index.sizeZ + dataRelZ];
+    uint64_t sws_data_offsets = ptr_shift_global(data_index, sizeof(sws_index_t));
+    const uint32_t sws_current_offset = ConstUint32Ref(sws_data_offsets + uint64_t((dataRelX * data_index.sizeZ + dataRelZ) * 4)).val;
 
     if (!sws_current_offset) return 0.0;
 
-    global const sws_data_t *  const data = ptr_shift_global(data_index, sws_data_offsets[dataRelX * data_index.sizeZ + dataRelZ]);
+    uint64_t data = ptr_shift_global(data_index, ConstUint32Ref(sws_data_offsets + uint64_t((dataRelX * data_index.sizeZ + dataRelZ) * 4)).val);
 
-    global const int32_t *  const boxStartX = ptr_shift_global(data, data.boxStartX);
-    global const int32_t *  const boxStartY = ptr_shift_global(data, data.boxStartY);
-    global const int32_t *  const boxStartZ = ptr_shift_global(data, data.boxStartZ);
-    global const int32_t *  const boxEndX = ptr_shift_global(data, data.boxEndX);
-    global const int32_t *  const boxEndY = ptr_shift_global(data, data.boxEndY);
-    global const int32_t *  const boxEndZ = ptr_shift_global(data, data.boxEndZ);
-    global const int32_t *  const groundLevelDelta = ptr_shift_global(data, data.groundLevelDelta);
-    global const int32_t *  const terrainAdjustment = ptr_shift_global(data, data.terrainAdjustment);
+    uint64_t boxStartX = ptr_shift_global(data, data.boxStartX);
+    uint64_t boxStartY = ptr_shift_global(data, data.boxStartY);
+    uint64_t boxStartZ = ptr_shift_global(data, data.boxStartZ);
+    uint64_t boxEndX = ptr_shift_global(data, data.boxEndX);
+    uint64_t boxEndY = ptr_shift_global(data, data.boxEndY);
+    uint64_t boxEndZ = ptr_shift_global(data, data.boxEndZ);
+    uint64_t groundLevelDelta = ptr_shift_global(data, data.groundLevelDelta);
+    uint64_t terrainAdjustment = ptr_shift_global(data, data.terrainAdjustment);
 
-    global const int32_t *  const sourceX = ptr_shift_global(data, data.sourceX);
-    global const int32_t *  const sourceGroundY = ptr_shift_global(data, data.sourceGroundY);
-    global const int32_t *  const sourceZ = ptr_shift_global(data, data.sourceZ);
+    uint64_t sourceX = ptr_shift_global(data, data.sourceX);
+    uint64_t sourceGroundY = ptr_shift_global(data, data.sourceGroundY);
+    uint64_t sourceZ = ptr_shift_global(data, data.sourceZ);
 
     if (x < data.affectedBox_startX || x > data.affectedBox_endX ||
         y < data.affectedBox_startY || y > data.affectedBox_endY ||
@@ -1151,9 +1151,9 @@ double df_structureWeightSampler_sample(global const float *  const structureWei
     double d = 0.0;
 
     for (uint32_t i = 0; i < data.pieceLength; i ++) {
-        int32_t m = max(0, max(boxStartX[i] - x, x - boxEndX[i]));
-        int32_t n = max(0, max(boxStartZ[i] - z, z - boxEndZ[i]));
-        int32_t o = boxStartY[i] + groundLevelDelta[i];
+        int32_t m = max(0, max(ConstInt32Ref(boxStartX + uint64_t(i * 4)).val - x, x - ConstInt32Ref(boxEndX + uint64_t(i * 4)).val));
+        int32_t n = max(0, max(ConstInt32Ref(boxStartZ + uint64_t(i * 4)).val - z, z - ConstInt32Ref(boxEndZ + uint64_t(i * 4)).val));
+        int32_t o = ConstInt32Ref(boxStartY + uint64_t(i * 4)).val + groundLevelDelta[i];
         int32_t p = y - o;
 
         switch (terrainAdjustment[i]) {
@@ -1167,10 +1167,10 @@ double df_structureWeightSampler_sample(global const float *  const structureWei
                 d += df_structureWeightSampler_getStructureWeight_impl(structureWeightSamplerTable, m, p, n, p) * 0.8;
                 break;
             case SWSTA_BEARD_BOX:
-                d += df_structureWeightSampler_getStructureWeight_impl(structureWeightSamplerTable, m, max(0, max(o - y, y - boxEndY[i])), n, p) * 0.8;
+                d += df_structureWeightSampler_getStructureWeight_impl(structureWeightSamplerTable, m, max(0, max(o - y, y - ConstInt32Ref(boxEndY + uint64_t(i * 4)).val)), n, p) * 0.8;
                 break;
             case SWSTA_ENCAPSULATE:
-                d += __df_structureWeightSampler_getMagnitudeWeight(double(m) / 2.0, double(max)(0, max(boxStartY[i] - y, y - boxEndY[i])) / 2.0, double(n) / 2.0) * 0.8;
+                d += __df_structureWeightSampler_getMagnitudeWeight(double(m) / 2.0, double(max)(0, max(ConstInt32Ref(boxStartY + uint64_t(i * 4)).val - y, y - ConstInt32Ref(boxEndY + uint64_t(i * 4)).val)) / 2.0, double(n) / 2.0) * 0.8;
                 break;
             default:
                 #ifdef DEBUG
@@ -1294,8 +1294,8 @@ int32_t chunkNoiseSampler_estimateSurfaceHeight0(uint64_t const_data, uint64_t r
 // const int32_t CACHE_SIZE_estimateSurfaceHeight = (CACHE_CHUNK_RADIUS_estimateSurfaceHeight * 2 + 1) << 2;
 
 int32_t chunkNoiseSampler_estimateSurfaceHeight(uint64_t const_data, uint64_t rw_data, const int32_t blockX, const int32_t blockZ) {
-    global const worldgen_params_t *params = rw_data;
-    global const int32_t *cache = ptr_shift_global(rw_data, params.offset_estimateSurfaceHeight);
+    uint64_t params = rw_data;
+    uint64_t cache = ptr_shift_global(rw_data, params.offset_estimateSurfaceHeight);
     int32_t biomeX = math_block2biome(blockX);
     int32_t biomeZ = math_block2biome(blockZ);
     int32_t relX = biomeX - params.estimateSurfaceHeight_startBiomeX;
@@ -1317,7 +1317,7 @@ int32_t chunkNoiseSampler_estimateSurfaceHeight(uint64_t const_data, uint64_t rw
 
 #ifdef DF_COMPILE_ESTIMATE_SURFACE_HEIGHT
 kernel ) void chunkNoiseSampler_estimateSurfaceHeight_prefill_indep(uint64_t const_data, uint64_t rw_data,
-                                                                                                                 global int32_t *  const cache,
+                                                                                                                 uint64_t cache,
                                                                                                                  const int32_t startChunkX, const int32_t startChunkZ, const uint32_t cacheWidth) {
     if (!const_data || !cache || !rw_data) {
         #ifdef DEBUG
@@ -1359,7 +1359,7 @@ uint64_t math_mixStafford13(uint64_t seed) {
     return seed ^ seed >> 31;
 }
 
-void random_state_set_seed(random_state_t *state, int64_t seed) {
+void random_state_set_seed(uint64_t state, int64_t seed) {
     if (state.type == RANDOM_Checked) {
         state.seedLo = (seed ^ 25214903917L) & 281474976710655L;
     } else if (state.type == RANDOM_Xoroshiro128PlusPlus) {
@@ -1376,7 +1376,7 @@ void random_state_set_seed(random_state_t *state, int64_t seed) {
     }
 }
 
-void random_state_split_coords(random_state_t *state, int32_t x, int32_t y, int32_t z) {
+void random_state_split_coords(uint64_t state, int32_t x, int32_t y, int32_t z) {
     if (state.type == RANDOM_Checked) {
         int64_t l = math_hashCode_int32x3(x, y, z);
         state.seedLo ^= l;
@@ -1397,7 +1397,7 @@ void random_state_split_coords(random_state_t *state, int32_t x, int32_t y, int3
     }
 }
 
-int32_t random_state_Checked_next(random_state_t *state, int32_t bits) {
+int32_t random_state_Checked_next(uint64_t state, int32_t bits) {
     if (state.type != RANDOM_Checked) {
         #ifdef DEBUG
         printf("trap: random_state_Checked_next: unexpected random type %lu\n", state.type);
@@ -1412,7 +1412,7 @@ int32_t random_state_Checked_next(random_state_t *state, int32_t bits) {
     return (int32_t) (m >> (48 - bits));
 }
 
-int64_t random_state_Xoroshiro128PlusPlus_next0(random_state_t *state) {
+int64_t random_state_Xoroshiro128PlusPlus_next0(uint64_t state) {
     if (state.type != RANDOM_Xoroshiro128PlusPlus) {
         #ifdef DEBUG
         printf("trap: random_state_Xoroshiro128PlusPlus_next0: unexpected random type %lu\n", state.type);
@@ -1431,11 +1431,11 @@ int64_t random_state_Xoroshiro128PlusPlus_next0(random_state_t *state) {
     return n;
 }
 
-int64_t random_state_Xoroshiro128PlusPlus_next(random_state_t *state, int32_t bits) {
+int64_t random_state_Xoroshiro128PlusPlus_next(uint64_t state, int32_t bits) {
     return (uint64_t(random_state_Xoroshiro128PlusPlus_next0)(state)) >> (64 - bits);
 }
 
-float random_state_nextFloat(random_state_t *state) {
+float random_state_nextFloat(uint64_t state) {
     if (state.type == RANDOM_Checked) {
         return float(random_state_Checked_next)(state, 24) * 5.9604645E-8F;
     } else if (state.type == RANDOM_Xoroshiro128PlusPlus) {
@@ -1450,7 +1450,7 @@ float random_state_nextFloat(random_state_t *state) {
     }
 }
 
-int32_t random_state_nextIntBounded(random_state_t *state, int32_t bound) {
+int32_t random_state_nextIntBounded(uint64_t state, int32_t bound) {
     if (state.type == RANDOM_Checked) {
         if (bound <= 0) {
             #ifdef DEBUG
@@ -1547,20 +1547,20 @@ int32_t y;
 //     }
 // }
 
-int32_t aquifer_fluidlevel_getBlockState_ptr_global(global const aquifer_fluidlevel_t *data, const int32_t y) {
+int32_t aquifer_fluidlevel_getBlockState_ptr_global(uint64_t data, const int32_t y) {
     return y < data.y ? data.blockState : BLOCK_AIR;
 }
 
-int32_t aquifer_fluidlevel_equals_global(global const aquifer_fluidlevel_t *data0, global const aquifer_fluidlevel_t *data1) {
+int32_t aquifer_fluidlevel_equals_global(uint64_t data0, uint64_t data1) {
     return data0.y == data1.y && data0.blockState == data1.blockState;
 }
 const const int32_t __aquifer_chunkPosOffset[13][2] = {
     {0, 0}, {-2, -1}, {-1, -1}, {0, -1}, {1, -1}, {-3, 0}, {-2, 0}, {-1, 0}, {1, 0}, {-2, 1}, {-1, 1}, {0, 1}, {1, 1}
 };
 
-const global aquifer_fluidlevel_t *fluidLevelSampler_getFluidLevel_ptr(uint64_t rw_data, const int32_t y) {
-    global const worldgen_params_t *params = rw_data;
-    global const aquifer_fluidlevel_t *fluidLevels = ptr_shift_global(rw_data, params.offset_fluidLevelSampler);
+const uint64_t fluidLevelSampler_getFluidLevel_ptr(uint64_t rw_data, const int32_t y) {
+    uint64_t params = rw_data;
+    uint64_t fluidLevels = ptr_shift_global(rw_data, params.offset_fluidLevelSampler);
     const int32_t relY = y - genShapeCfg_minimumY;
     return &fluidLevels[clamp(relY, 0, genShapeCfg_height - 1)];
 }
@@ -1585,7 +1585,7 @@ int32_t __aquifer_getNoiseBasedFluidLevel(uint64_t const_data, int32_t blockX, i
 
 const int32_t DimensionType_field_35479 = -32512; // copied from debugger
 
-int32_t __aquifer_getFluidBlockY(uint64_t const_data, int32_t blockX, int32_t blockY, int32_t blockZ, global const aquifer_fluidlevel_t *defaultFluidLevel, int32_t surfaceHeightEstimate, bool bl) {
+int32_t __aquifer_getFluidBlockY(uint64_t const_data, int32_t blockX, int32_t blockY, int32_t blockZ, uint64_t defaultFluidLevel, int32_t surfaceHeightEstimate, bool bl) {
     // DensityFunction.UnblendedNoisePos unblendedNoisePos = new DensityFunction.UnblendedNoisePos(blockX, blockY, blockZ);
     const sample_int32_ctx_t unblendedNoisePos = make_sample_int32_ctx(const_data, NULL, blockX, blockY, blockZ, 0);
     double d;
@@ -1613,7 +1613,7 @@ int32_t __aquifer_getFluidBlockY(uint64_t const_data, int32_t blockX, int32_t bl
     return i;
 }
 
-int32_t __aquifer_getFluidBlockState(uint64_t const_data, int blockX, int blockY, int blockZ, global const aquifer_fluidlevel_t *defaultFluidLevel, int fluidLevel) {
+int32_t __aquifer_getFluidBlockState(uint64_t const_data, int blockX, int blockY, int blockZ, uint64_t defaultFluidLevel, int fluidLevel) {
     int32_t blockState = defaultFluidLevel.blockState;
     if (fluidLevel <= -10 && fluidLevel != DimensionType_field_35479 && defaultFluidLevel.blockState != BLOCK_LAVA) {
         int i = 64;
@@ -1642,7 +1642,7 @@ kernel void aquifer_data_prefill(uint64_t const_data, uint64_t rw_data) {
         return;
     }
 
-    global const worldgen_params_t *params = rw_data;
+    uint64_t params = rw_data;
 
     if (!params.offset_aquifer) {
         #ifdef DEBUG
@@ -1653,11 +1653,11 @@ kernel void aquifer_data_prefill(uint64_t const_data, uint64_t rw_data) {
         return;
     }
 
-    global const aquifer_data_t *data = ptr_shift_global(rw_data, params.offset_aquifer);
-    global const random_state_t *randomDeriver = ptr_shift_global(data, data.randomDeriver);
+    uint64_t data = ptr_shift_global(rw_data, params.offset_aquifer);
+    uint64_t randomDeriver = ptr_shift_global(data, data.randomDeriver);
     
-    global aquifer_fluidlevel_t *waterLevels = ptr_shift_global(data, data.waterLevels);
-    global uint16_t *packedBlockPositions = ptr_shift_global(data, data.packedBlockPositions);
+    uint64_t waterLevels = ptr_shift_global(data, data.waterLevels);
+    uint64_t packedBlockPositions = ptr_shift_global(data, data.packedBlockPositions);
 
     const int32_t curX = data.startX + get_global_id(0);
     const int32_t curY = data.startY + get_global_id(2);
@@ -1681,7 +1681,7 @@ kernel void aquifer_data_prefill(uint64_t const_data, uint64_t rw_data) {
     bool bl = false;
 
     // direct port
-    global const aquifer_fluidlevel_t *fluidLevel = fluidLevelSampler_getFluidLevel_ptr(rw_data, blockY);
+    uint64_t fluidLevel = fluidLevelSampler_getFluidLevel_ptr(rw_data, blockY);
     for (uint32_t __i = 0; __i < 13; __i ++) { // 13 comes from __aquifer_chunkPosOffset
         const int32_t offX = __aquifer_chunkPosOffset[__i][0];
         const int32_t offZ = __aquifer_chunkPosOffset[__i][1];
@@ -1697,7 +1697,7 @@ kernel void aquifer_data_prefill(uint64_t const_data, uint64_t rw_data) {
 
         bool bl3 = j > o;
         if (bl3 || bl2) {
-            global const aquifer_fluidlevel_t *fluidLevel2 = fluidLevelSampler_getFluidLevel_ptr(rw_data, o);
+            uint64_t fluidLevel2 = fluidLevelSampler_getFluidLevel_ptr(rw_data, o);
             if (aquifer_fluidlevel_getBlockState_ptr_global(fluidLevel2, o) != BLOCK_AIR) {
                 if (bl2) {
                     bl = true;
@@ -1755,7 +1755,7 @@ double __aquifer_getQ(const double i, const double d, const double j) {
     return q;
 }
 
-double __aquifer_postCalculateDensityModified(const sample_int32_ctx_t ctx, const double q, double *mutableDoubleThingy) {
+double __aquifer_postCalculateDensityModified(const sample_int32_ctx_t ctx, const double q, uint64_t mutableDoubleThingy) {
     double r;
     if (!(q < -2.0) && !(q > 2.0)) {
         double s = *mutableDoubleThingy;
@@ -1773,7 +1773,7 @@ double __aquifer_postCalculateDensityModified(const sample_int32_ctx_t ctx, cons
     return 2.0 * (r + q);
 }
 
-double __aquifer_calculateDensityModified(const sample_int32_ctx_t ctx, global const aquifer_fluidlevel_t *fluidLevel, global const aquifer_fluidlevel_t *fluidLevel2, double *mutableDoubleThingy) {
+double __aquifer_calculateDensityModified(const sample_int32_ctx_t ctx, uint64_t fluidLevel, uint64_t fluidLevel2, uint64_t mutableDoubleThingy) {
     int32_t i = ctx.y;
     int32_t blockState = aquifer_fluidlevel_getBlockState_ptr_global(fluidLevel, i);
     int32_t blockState2 = aquifer_fluidlevel_getBlockState_ptr_global(fluidLevel2, i);
@@ -1793,7 +1793,7 @@ double __aquifer_calculateDensityModified(const sample_int32_ctx_t ctx, global c
 }
 
 bool __aquifer_extractedCheckFG(const sample_int32_ctx_t ctx,
-                                       const double density, const double d, global const aquifer_fluidlevel_t *fluidLevel2, const double f, global const aquifer_fluidlevel_t *fluidLevel4, double *mutableDoubleThingy) {
+                                       const double density, const double d, uint64_t fluidLevel2, const double f, uint64_t fluidLevel4, uint64_t mutableDoubleThingy) {
     if (f > 0.0) {
         double g = d * f * __aquifer_calculateDensityModified(ctx, fluidLevel2, fluidLevel4, mutableDoubleThingy);
         if (density + g > 0.0) {
@@ -1805,13 +1805,13 @@ bool __aquifer_extractedCheckFG(const sample_int32_ctx_t ctx,
 }
 
 aquifer_result_t __aquifer_getFinalBlockState(const sample_int32_ctx_t ctx,
-                                                     const double density, const double d, global const aquifer_fluidlevel_t *fluidLevel2, global const aquifer_fluidlevel_t *fluidLevel3, 
-                                                     const int32_t blockState, const uint64_t *packedRes, double *mutableDoubleThingy) {
-    global const worldgen_params_t *params = ctx.rw_data;
-    global aquifer_data_t *data = ptr_shift_global(ctx.rw_data, params.offset_aquifer);
-    global const aquifer_fluidlevel_t *waterLevels = ptr_shift_global(data, data.waterLevels);
+                                                     const double density, const double d, uint64_t fluidLevel2, uint64_t fluidLevel3, 
+                                                     const int32_t blockState, uint64_t packedRes, uint64_t mutableDoubleThingy) {
+    uint64_t params = ctx.rw_data;
+    uint64_t data = ptr_shift_global(ctx.rw_data, params.offset_aquifer);
+    uint64_t waterLevels = ptr_shift_global(data, data.waterLevels);
 
-    global const aquifer_fluidlevel_t *fluidLevel4 = &waterLevels[math_aquifer_unpackPackedPosIdx(packedRes[2])];
+    uint64_t fluidLevel4 = &waterLevels[math_aquifer_unpackPackedPosIdx(packedRes[2])];
     // dbg_checkBlockState(fluidLevel4.blockState);
     int dist1 = math_aquifer_unpackPackedDist(packedRes[0]);
     int dist2 = math_aquifer_unpackPackedDist(packedRes[1]);
@@ -1847,18 +1847,18 @@ aquifer_result_t __aquifer_getFinalBlockState(const sample_int32_ctx_t ctx,
     };
 }
 
-aquifer_result_t aquifer_applyPost_impl(const sample_int32_ctx_t ctx, const double density, const int32_t j, const int32_t i, const int32_t k, const uint64_t *packedRes) {
-    global const worldgen_params_t *params = ctx.rw_data;
-    global aquifer_data_t *data = ptr_shift_global(ctx.rw_data, params.offset_aquifer);
-    global const aquifer_fluidlevel_t *waterLevels = ptr_shift_global(data, data.waterLevels);
+aquifer_result_t aquifer_applyPost_impl(const sample_int32_ctx_t ctx, const double density, const int32_t j, const int32_t i, const int32_t k, uint64_t packedRes) {
+    uint64_t params = ctx.rw_data;
+    uint64_t data = ptr_shift_global(ctx.rw_data, params.offset_aquifer);
+    uint64_t waterLevels = ptr_shift_global(data, data.waterLevels);
 
-    global const aquifer_fluidlevel_t *fluidLevel2 = &waterLevels[math_aquifer_unpackPackedPosIdx(packedRes[0])];
+    uint64_t fluidLevel2 = &waterLevels[math_aquifer_unpackPackedPosIdx(packedRes[0])];
     double d = math_aquifer_maxDistance(math_aquifer_unpackPackedDist(packedRes[0]), math_aquifer_unpackPackedDist(packedRes[1]));
     int32_t blockState = aquifer_fluidlevel_getBlockState_ptr_global(fluidLevel2, j);
     if (d <= 0.0) {
         bool needsFluidTick = false;
         if (d >= aquifer_NEEDS_FLUID_TICK_DISTANCE_THRESHOLD) {
-            global const aquifer_fluidlevel_t *fluidLevel3 = &waterLevels[math_aquifer_unpackPackedPosIdx(packedRes[1])];
+            uint64_t fluidLevel3 = &waterLevels[math_aquifer_unpackPackedPosIdx(packedRes[1])];
             needsFluidTick = !aquifer_fluidlevel_equals_global(fluidLevel2, fluidLevel3);
         } else {
             needsFluidTick = false;
@@ -1874,7 +1874,7 @@ aquifer_result_t aquifer_applyPost_impl(const sample_int32_ctx_t ctx, const doub
         };
     } else {
         double mutableDoubleThingy = nan(uint64_t(0));
-        global const aquifer_fluidlevel_t *fluidLevel3 = &waterLevels[math_aquifer_unpackPackedPosIdx(packedRes[1])];
+        uint64_t fluidLevel3 = &waterLevels[math_aquifer_unpackPackedPosIdx(packedRes[1])];
         double e = d * __aquifer_calculateDensityModified(ctx, fluidLevel2, fluidLevel3, &mutableDoubleThingy);
         if (density + e > 0.0) {
             return (aquifer_result_t) {
@@ -1888,7 +1888,7 @@ aquifer_result_t aquifer_applyPost_impl(const sample_int32_ctx_t ctx, const doub
 }
 
 aquifer_result_t aquifer_sample(const sample_int32_ctx_t ctx, const double density) {
-    global const worldgen_params_t *params = ctx.rw_data;
+    uint64_t params = ctx.rw_data;
 
     if (!params.offset_aquifer) {
         if (density > 0.0) {
@@ -1897,7 +1897,7 @@ aquifer_result_t aquifer_sample(const sample_int32_ctx_t ctx, const double densi
                 .needsFluidTick = false
             };
         } else {
-            global const aquifer_fluidlevel_t *fluidLevel = fluidLevelSampler_getFluidLevel_ptr(ctx.rw_data, ctx.y);
+            uint64_t fluidLevel = fluidLevelSampler_getFluidLevel_ptr(ctx.rw_data, ctx.y);
             return (aquifer_result_t) {
                 .blockState = aquifer_fluidlevel_getBlockState_ptr_global(fluidLevel, ctx.y),
                 .needsFluidTick = false,
@@ -1905,7 +1905,7 @@ aquifer_result_t aquifer_sample(const sample_int32_ctx_t ctx, const double densi
         }
     }
 
-    global aquifer_data_t *aquifer_data = ptr_shift_global(ctx.rw_data, params.offset_aquifer);
+    uint64_t aquifer_data = ptr_shift_global(ctx.rw_data, params.offset_aquifer);
 
     int32_t i = ctx.x;
     int32_t j = ctx.y;
@@ -1917,7 +1917,7 @@ aquifer_result_t aquifer_sample(const sample_int32_ctx_t ctx, const double densi
             .needsFluidTick = false
         };
     } else {
-        global const aquifer_fluidlevel_t *fluidLevel = fluidLevelSampler_getFluidLevel_ptr(ctx.rw_data, j);
+        uint64_t fluidLevel = fluidLevelSampler_getFluidLevel_ptr(ctx.rw_data, j);
         if (j > aquifer_data.samplingYLowPassCutoff) {
             return (aquifer_result_t) {
                 .blockState = aquifer_fluidlevel_getBlockState_ptr_global(fluidLevel, j),
@@ -1931,7 +1931,7 @@ aquifer_result_t aquifer_sample(const sample_int32_ctx_t ctx, const double densi
                 .needsFluidTick = false
             };
         } else {
-            global const uint16_t *packedBlockPositions = ptr_shift_global(aquifer_data, aquifer_data.packedBlockPositions);
+            uint64_t packedBlockPositions = ptr_shift_global(aquifer_data, aquifer_data.packedBlockPositions);
             uint64_t packedRes[4];
             math_aquifer_refreshDistPosIdx_global(packedBlockPositions, packedRes, aquifer_data, i, j, k);
             return aquifer_applyPost_impl(ctx, density, j, i, k, packedRes);
@@ -1964,12 +1964,12 @@ const const vein_type_t VEIN_IRON = {
 };
 
 int32_t ore_vein_sample(const sample_int32_ctx_t ctx) {
-    global const worldgen_params_t *params = ctx.rw_data;
+    uint64_t params = ctx.rw_data;
     if (!params.offset_oreVeinRandom) return BLOCK_NULL;
-    global const random_state_t *veinRandom = ptr_shift_global(ctx.rw_data, params.offset_oreVeinRandom);
+    uint64_t veinRandom = ptr_shift_global(ctx.rw_data, params.offset_oreVeinRandom);
 
     double d = df_binding_vein_toggle(ctx);
-    const vein_type_t *veinType = d > 0.0 ? &VEIN_COPPER : &VEIN_IRON;
+    uint64_t veinType = d > 0.0 ? &VEIN_COPPER : &VEIN_IRON;
     double e = fabs(d);
     int32_t j = veinType.maxY - ctx.y;
     int32_t k = ctx.y - veinType.minY;
@@ -2002,7 +2002,7 @@ int32_t ore_vein_sample(const sample_int32_ctx_t ctx) {
 #ifdef DF_COMPILE_NOISE_KERNEL
 // res_blocks: [relY][relZ][relX], sign bit incdicate needsFluidTick
 )
-kernel void df_noise_kernel(uint64_t const_data, uint64_t rw_data, global uint8_t *res_blocks,
+kernel void df_noise_kernel(uint64_t const_data, uint64_t rw_data, uint64_t res_blocks,
                             const int32_t chunkX, const int32_t chunkZ) {
     if (!const_data || !rw_data || !res_blocks) {
         #ifdef DEBUG
@@ -2013,7 +2013,7 @@ kernel void df_noise_kernel(uint64_t const_data, uint64_t rw_data, global uint8_
         return;
     }
 
-    global const worldgen_params_t *params = rw_data;
+    uint64_t params = rw_data;
     const int32_t sizeX = get_global_size(0);
     const int32_t sizeY = get_global_size(2);
     const int32_t sizeZ = get_global_size(1);
@@ -2062,17 +2062,17 @@ layout(buffer_reference, scalar) readonly buffer branch_children {
 } biome_search_tree_node_t;
 
 bool 
-math_biome_search_tree_is_branch_impl(global const biome_search_tree_node_t *  const node) {
+math_biome_search_tree_is_branch_impl(uint64_t node) {
     return (node.state & (1U << 31)) != 0;
 }
 
 bool 
-math_biome_search_tree_is_branch_children_impl(global const biome_search_tree_node_t *  const node) {
+math_biome_search_tree_is_branch_children_impl(uint64_t node) {
     return (node.state & (1U << 30)) != 0;
 }
 
 void
-math_biome_search_tree_validate_node_impl(global const biome_search_tree_node_t *  const node) {
+math_biome_search_tree_validate_node_impl(uint64_t node) {
     if (!math_biome_search_tree_is_branch_impl(node) && math_biome_search_tree_is_branch_children_impl(node)) {
         // invalid state
         #ifdef DEBUG
@@ -2102,8 +2102,8 @@ math_biome_search_tree_validate_node_impl(global const biome_search_tree_node_t 
 }
 
 uint64_t 
-math_biome_search_tree_distance_func_impl(global const biome_search_tree_node_t *  const node,
-                                       const int16_t *  const target) {
+math_biome_search_tree_distance_func_impl(uint64_t node,
+                                       uint64_t target) {
     if (math_biome_search_tree_is_branch_children_impl(node)) {
         #ifdef DEBUG
         printf("trap: potential biome search tree corruption (math_biome_search_tree_distance_func_impl, 1)\n");
@@ -2130,8 +2130,8 @@ uint32_t node;
 };
 
 uint32_t 
-math_biome_search_tree_calc(global const biome_search_tree_node_t *  const nodes,
-                            const int16_t *  const target,
+math_biome_search_tree_calc(uint64_t nodes,
+                            uint64_t target,
                             const uint32_t nodes_c) {
     // no recursion allowed, because this needs to be eventually ported to GPU
 
@@ -2154,7 +2154,7 @@ math_biome_search_tree_calc(global const biome_search_tree_node_t *  const nodes
         math_biome_search_tree_validate_node_impl(nodes + cur_node);
 
         uint32_t child_node;
-        if (iter_i >= 7 || !(child_node = nodes[cur_node + 1].branch_children.children_offset[iter_i])) {
+        if (iter_i >= 7 || !(child_node = ConstUint32Ref(nodes + uint64_t((cur_node + 1) * 64 + 4 + iter_i * 4)).val)) {
             // no more children, pop the stack
             top --;
             continue;
@@ -2199,7 +2199,7 @@ extern const uint32_t biome_multinoise_tree_nodes_c;
 // res_blocks: [relY][relZ][relX]
 )
 kernel void df_biome_multinoise_kernel(uint64_t const_data, uint64_t rw_data,
-                                       global uint32_t *  const res_biomes,
+                                       uint64_t res_biomes,
                                        const int32_t startBiomeX, const int32_t startBiomeZ, const int32_t startBiomeY,
                                        const uint32_t sizeX, const uint32_t sizeZ, const uint32_t sizeY) {
     if (!biome_multinoise_tree_offset) {
