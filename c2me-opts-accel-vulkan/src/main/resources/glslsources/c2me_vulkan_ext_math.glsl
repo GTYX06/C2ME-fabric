@@ -216,8 +216,8 @@ int32_t math_block2biome(const int32_t blockCoord) {
 }
 
 uint32_t
-__math_simplex_map_global(uint64_t permutations, const int32_t input) {
-    return ConstUint32Ref(permutations + uint64_t((input & 0xFF) * 4)).val;
+__math_simplex_map_global(uint64_t permutations, const int32_t in_val) {
+    return ConstUint32Ref(permutations + uint64_t((in_val & 0xFF) * 4)).val;
 }
 
 double math_simplex_dot(const int32_t hash, const double x, const double y,
