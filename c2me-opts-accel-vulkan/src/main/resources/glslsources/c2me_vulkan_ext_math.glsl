@@ -63,6 +63,15 @@ layout(buffer_reference, scalar) buffer RWUint64Ref { uint64_t val; };
 
 #define kernel
 #define convert_short_sat(x) int16_t(clamp(int64_t(x), -32768L, 32767L))
+#define fabs(x) abs(x)
+#define fmod(x, y) mod(x, y)
+#define fmax(x, y) max(x, y)
+#define fmin(x, y) min(x, y)
+#define DBL_MAX 1.7976931348623157e+308
+#define FLT_MAX 3.402823466e+38F
+#define nan(x) (0.0 / 0.0)
+#define __builtin_trap()
+#define __builtin_unreachable()
 
 const double FLAT_SIMPLEX_GRAD[16][3] = {
         {1, 1, 0},
@@ -341,7 +350,7 @@ math_noise_perlin_sample_global(uint64_t permutations,
 
 
 layout(buffer_reference, scalar) readonly buffer double_octave_sampler_data_t {
-uint64_t length;
+uint64_t len;
     double amplitude;
     int32_t need_shift;
     int32_t lacunarity_powd;
@@ -369,7 +378,7 @@ math_noise_perlin_double_octave_sample_impl_global(double_octave_sampler_data_t 
     uint64_t sampler_originZ = ptr_shift_global(uint64_t(data), data.sampler_originZ);
     uint64_t amplitudes = ptr_shift_global(uint64_t(data), data.amplitudes);
 
-    for (uint32_t i = 0; i < data.length; i++) {
+    for (uint32_t i = 0; i < data.len; i++) {
         const double e = ConstDoubleRef(lacunarity_powd + uint64_t(i * 8)).val;
         const double f = ConstDoubleRef(persistence_powd + uint64_t(i * 8)).val;
         uint64_t permutations = sampler_permutations + 256 * i;
@@ -410,7 +419,7 @@ math_noise_perlin_double_octave_sample_global(double_octave_sampler_data_t data,
 }
 
 layout(buffer_reference, scalar) readonly buffer interpolated_noise_sub_sampler_t {
-uint32_t length;
+uint32_t len;
     int32_t sampler_permutations;
     int32_t sampler_originX;
     int32_t sampler_originY;
@@ -447,7 +456,7 @@ math_noise_perlin_interpolated_sample_global(interpolated_noise_sampler_t data,
     double m = 0.0;
     double n = 0.0;
 
-    for (uint32_t offset = 0; offset < data.normal.length; offset++) {
+    for (uint32_t offset = 0; offset < data.normal.len; offset++) {
         uint64_t sampler_permutations = ptr_shift_global(uint64_t(data), data.normal.sampler_permutations);
         uint64_t sampler_originX = ptr_shift_global(uint64_t(data), data.normal.sampler_originX);
         uint64_t sampler_originY = ptr_shift_global(uint64_t(data), data.normal.sampler_originY);
@@ -472,7 +481,7 @@ math_noise_perlin_interpolated_sample_global(interpolated_noise_sampler_t data,
     const uint8_t bl3 = q <= 0.0;
 
     if (!bl2) {
-        for (uint32_t offset = 0; offset < data.lower.length; offset++) {
+        for (uint32_t offset = 0; offset < data.lower.len; offset++) {
             uint64_t sampler_permutations = ptr_shift_global(uint64_t(data), data.lower.sampler_permutations);
             uint64_t sampler_originX = ptr_shift_global(uint64_t(data), data.lower.sampler_originX);
             uint64_t sampler_originY = ptr_shift_global(uint64_t(data), data.lower.sampler_originY);
@@ -494,7 +503,7 @@ math_noise_perlin_interpolated_sample_global(interpolated_noise_sampler_t data,
     }
 
     if (!bl3) {
-        for (uint32_t offset = 0; offset < data.upper.length; offset++) {
+        for (uint32_t offset = 0; offset < data.upper.len; offset++) {
             uint64_t sampler_permutations = ptr_shift_global(uint64_t(data), data.upper.sampler_permutations);
             uint64_t sampler_originX = ptr_shift_global(uint64_t(data), data.upper.sampler_originX);
             uint64_t sampler_originY = ptr_shift_global(uint64_t(data), data.upper.sampler_originY);
@@ -537,7 +546,7 @@ math_end_islands_sample_global(uint64_t simplex_permutations, const int32_t x, c
     float f = 100.0F - sqrt(float(muld & 0x7fffffffL)) * 8.0F;
     f = clamp(f, -100.0F, 80.0F);
 
-    int8_t ms[25 * 25], ns[25 * 25], hit[25 * 25];
+    int32_t ms[625]; int32_t ns[625]; bool hit[625];
     const int64_t omin = abs(i) - 12L;
     const int64_t pmin = abs(j) - 12L;
     const int64_t omax = abs(i) + 12L;
@@ -545,8 +554,8 @@ math_end_islands_sample_global(uint64_t simplex_permutations, const int32_t x, c
 
     {
         uint32_t idx = 0;
-        for (int8_t m = -12; m < 13; m++) {
-            for (int8_t n = -12; n < 13; n++) {
+        for (int32_t m = -12; m < 13; m++) {
+            for (int32_t n = -12; n < 13; n++) {
                 ms[idx] = m;
                 ns[idx] = n;
                 idx++;
@@ -564,14 +573,14 @@ math_end_islands_sample_global(uint64_t simplex_permutations, const int32_t x, c
 
     if (omin * omin + pmin * pmin > 4096L) {
         for (uint32_t idx = 0; idx < 25 * 25; idx++) {
-            const int64_t o = int64_t(i) + int64_t(ms)[idx];
-            const int64_t p = int64_t(j) + int64_t(ns)[idx];
+            const int64_t o = int64_t(i) + int64_t(ms[idx]);
+            const int64_t p = int64_t(j) + int64_t(ns[idx]);
             hit[idx] = math_noise_simplex_sample2d_global(simplex_permutations, double(o), double(p)) < -0.9F;
         }
     } else {
         for (uint32_t idx = 0; idx < 25 * 25; idx++) {
-            const int64_t o = int64_t(i) + int64_t(ms)[idx];
-            const int64_t p = int64_t(j) + int64_t(ns)[idx];
+            const int64_t o = int64_t(i) + int64_t(ms[idx]);
+            const int64_t p = int64_t(j) + int64_t(ns[idx]);
             hit[idx] = (o * o + p * p > 4096L) && math_noise_simplex_sample2d_global(
                     simplex_permutations, double(o), double(p)) < -0.9F;
         }
@@ -629,13 +638,13 @@ math_biome_access_sample(const int64_t theSeed, const int32_t x, const int32_t y
         var21 = var21 * (var21 * 6364136223846793005L + 1442695040888963407L) + var15;
         var21 = var21 * (var21 * 6364136223846793005L + 1442695040888963407L) + var16;
         var21 = var21 * (var21 * 6364136223846793005L + 1442695040888963407L) + var17;
-        double var22 = (double) ((var21 >> 24) & 1023) / 1024.0;
+        double var22 = double((var21 >> 24) & 1023) / 1024.0;
         double var23 = (var22 - 0.5) * 0.9;
         var21 = var21 * (var21 * 6364136223846793005L + 1442695040888963407L) + theSeed;
-        double var24 = (double) ((var21 >> 24) & 1023) / 1024.0;
+        double var24 = double((var21 >> 24) & 1023) / 1024.0;
         double var25 = (var24 - 0.5) * 0.9;
         var21 = var21 * (var21 * 6364136223846793005L + 1442695040888963407L) + theSeed;
-        double var26 = (double) ((var21 >> 24) & 1023) / 1024.0;
+        double var26 = double((var21 >> 24) & 1023) / 1024.0;
         double var27 = (var26 - 0.5) * 0.9;
         double var28 = math_square(var20 + var27) + math_square(var19 + var25) + math_square(var18 + var23);
         var28s[var11] = var28;
@@ -1409,7 +1418,7 @@ int32_t random_state_Checked_next(uint64_t state, int32_t bits) {
 
     int32_t m = state.seedLo * 25214903917L + 11L & 281474976710655L;
     state.seedLo = m;
-    return (int32_t) (m >> (48 - bits));
+    return int32_t(m >> (48 - bits));
 }
 
 int64_t random_state_Xoroshiro128PlusPlus_next0(uint64_t state) {
@@ -1460,7 +1469,7 @@ int32_t random_state_nextIntBounded(uint64_t state, int32_t bound) {
             __builtin_unreachable();
             return 0;
         } else if ((bound & bound - 1) == 0) {
-            return (int32_t)(int64_t(bound) * int64_t(random_state_Checked_next)(state, 31) >> 31);
+            return int32_t(int64_t(bound) * int64_t(random_state_Checked_next)(state, 31) >> 31);
         } else {
             int32_t i;
             int32_t j;
@@ -1492,7 +1501,7 @@ int32_t random_state_nextIntBounded(uint64_t state, int32_t bound) {
             int64_t m = l * int64_t(bound);
             int64_t n = m & 4294967295L;
             if (n < int64_t(bound)) {
-                for (int32_t i = ((uint32_t) ~bound + 1) % (uint32_t(bound)); n < int64_t(i); n = m & 4294967295L) {
+                for (int32_t i = int32_t((uint32_t(~bound) + 1u) % uint32_t(bound)); n < int64_t(i); n = m & 4294967295L) {
                     l = uint32_t(random_state_Xoroshiro128PlusPlus_next0)(state);
                     m = l * int64_t(bound);
                 }
