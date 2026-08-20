@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2021-2026 ishland
+ * Copyright (c) 2026 GTYX06
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,22 @@
  * THE SOFTWARE.
  */
 
-package com.ishland.c2me.opts.dfc.common.ast;
+package com.ishland.c2me.opts.accel.cuda.common.util;
 
-public interface AstNode {
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
-    AstNode[] getChildren();
+public class TLUtil {
 
-    AstNode transform(AstTransformer transformer);
+    private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(1024 * 1024).order(ByteOrder.nativeOrder()));
 
-    // data to be created as fields in generated code are only compared by class type
-    boolean relaxedEquals(AstNode o);
-
-    int relaxedHashCode();
-
-    default ReturnType getReturnType() {
-        return ReturnType.F64;
-    }
-
-    @SuppressWarnings("unchecked")
-    default String generateCUDAC(com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenFunctionContext context, String storeTo) {
-        com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode> emitter = (com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode>) com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenData.REGISTRY.get(this.getClass());
-        if (emitter == null) {
-            throw new UnsupportedOperationException("No CUDA emitter for " + this.getClass().getName());
+    public static ByteBuffer getDirectBuffer(int requiredCapacity) {
+        ByteBuffer buf = TL_BUFFER.get();
+        if (buf.capacity() < requiredCapacity) {
+            buf = ByteBuffer.allocateDirect(Math.max(requiredCapacity, buf.capacity() * 2)).order(ByteOrder.nativeOrder());
+            TL_BUFFER.set(buf);
         }
-        return emitter.doCUDAGen(this, context, storeTo);
+        buf.clear();
+        return buf;
     }
-
-    public enum ReturnType {
-        F64,
-        F32,
-        ;
-    }
-
 }

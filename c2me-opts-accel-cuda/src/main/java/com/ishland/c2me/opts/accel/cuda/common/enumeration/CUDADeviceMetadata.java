@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2021-2026 ishland
+ * Copyright (c) 2026 GTYX06
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,34 @@
  * THE SOFTWARE.
  */
 
-package com.ishland.c2me.opts.dfc.common.ast;
+package com.ishland.c2me.opts.accel.cuda.common.enumeration;
 
-public interface AstNode {
+import java.util.UUID;
 
-    AstNode[] getChildren();
-
-    AstNode transform(AstTransformer transformer);
-
-    // data to be created as fields in generated code are only compared by class type
-    boolean relaxedEquals(AstNode o);
-
-    int relaxedHashCode();
-
-    default ReturnType getReturnType() {
-        return ReturnType.F64;
+public record CUDADeviceMetadata(
+        int ordinal,
+        int deviceId,
+        String name,
+        UUID uuid,
+        int computeCapabilityMajor,
+        int computeCapabilityMinor,
+        long totalMemory,
+        int multiProcessorCount,
+        int warpSize,
+        int maxThreadsPerBlock
+) {
+    public String getArchString() {
+        return "compute_" + computeCapabilityMajor + computeCapabilityMinor;
     }
 
-    @SuppressWarnings("unchecked")
-    default String generateCUDAC(com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenFunctionContext context, String storeTo) {
-        com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode> emitter = (com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode>) com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenData.REGISTRY.get(this.getClass());
-        if (emitter == null) {
-            throw new UnsupportedOperationException("No CUDA emitter for " + this.getClass().getName());
-        }
-        return emitter.doCUDAGen(this, context, storeTo);
+    public String getSmString() {
+        return "sm_" + computeCapabilityMajor + computeCapabilityMinor;
     }
 
-    public enum ReturnType {
-        F64,
-        F32,
-        ;
+    public long score() {
+        long baseScore = (long) computeCapabilityMajor * 1000000L + (long) computeCapabilityMinor * 100000L;
+        baseScore += (long) multiProcessorCount * 1000L;
+        baseScore += (totalMemory / (1024L * 1024L));
+        return baseScore;
     }
-
 }

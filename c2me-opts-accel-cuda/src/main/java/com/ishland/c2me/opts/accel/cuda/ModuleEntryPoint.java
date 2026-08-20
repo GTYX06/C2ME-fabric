@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2021-2026 ishland
+ * Copyright (c) 2026 GTYX06
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,28 @@
  * THE SOFTWARE.
  */
 
-package com.ishland.c2me.opts.dfc.common.ast;
+package com.ishland.c2me.opts.accel.cuda;
 
-public interface AstNode {
+import com.ishland.c2me.base.common.config.ConfigSystem;
+import com.ishland.c2me.opts.accel.cuda.common.Config;
+import com.ishland.c2me.opts.accel.cuda.common.compiler.CUDACGenRegistry;
+import com.ishland.c2me.opts.accel.cuda.common.enumeration.CUDADeviceLocator;
 
-    AstNode[] getChildren();
+public class ModuleEntryPoint {
 
-    AstNode transform(AstTransformer transformer);
+    public static final boolean enabled = new ConfigSystem.ConfigAccessor()
+            .key("cudaAccel.enabled")
+            .comment("""
+                    Whether to enable CUDA acceleration for world generation
+                    """)
+            .getBoolean(true, true);
 
-    // data to be created as fields in generated code are only compared by class type
-    boolean relaxedEquals(AstNode o);
-
-    int relaxedHashCode();
-
-    default ReturnType getReturnType() {
-        return ReturnType.F64;
-    }
-
-    @SuppressWarnings("unchecked")
-    default String generateCUDAC(com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenFunctionContext context, String storeTo) {
-        com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode> emitter = (com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode>) com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenData.REGISTRY.get(this.getClass());
-        if (emitter == null) {
-            throw new UnsupportedOperationException("No CUDA emitter for " + this.getClass().getName());
+    static {
+        if (enabled) {
+            Config.init();
+            CUDACGenRegistry.init();
+            CUDADeviceLocator.init();
         }
-        return emitter.doCUDAGen(this, context, storeTo);
-    }
-
-    public enum ReturnType {
-        F64,
-        F32,
-        ;
     }
 
 }

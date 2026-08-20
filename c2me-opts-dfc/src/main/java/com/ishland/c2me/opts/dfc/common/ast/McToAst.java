@@ -226,6 +226,12 @@ public class McToAst {
     }
 
     public static <T extends DensityFunction> AstNode toAst(T df) {
+        if (df instanceof com.ishland.c2me.opts.dfc.common.gen.jvm.AbstractCompiledDensityFunction compiled) {
+            DensityFunction fallback = compiled.getFallback();
+            if (fallback != null) {
+                return toAst(fallback);
+            }
+        }
         AstEmitter<T> emitter = (AstEmitter<T>) REGISTRY.getOptional(df.getClass());
         if (emitter != null) {
             return emitter.toAst(df);

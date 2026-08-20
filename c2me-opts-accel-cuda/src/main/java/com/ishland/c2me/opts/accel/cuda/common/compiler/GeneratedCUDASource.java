@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2021-2026 ishland
+ * Copyright (c) 2026 GTYX06
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,24 @@
  * THE SOFTWARE.
  */
 
-package com.ishland.c2me.opts.dfc.common.ast;
+package com.ishland.c2me.opts.accel.cuda.common.compiler;
 
-public interface AstNode {
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import net.minecraft.block.BlockState;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.world.biome.Biome;
 
-    AstNode[] getChildren();
+import java.util.Map;
 
-    AstNode transform(AstTransformer transformer);
-
-    // data to be created as fields in generated code are only compared by class type
-    boolean relaxedEquals(AstNode o);
-
-    int relaxedHashCode();
-
-    default ReturnType getReturnType() {
-        return ReturnType.F64;
-    }
-
-    @SuppressWarnings("unchecked")
-    default String generateCUDAC(com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenFunctionContext context, String storeTo) {
-        com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode> emitter = (com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode>) com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenData.REGISTRY.get(this.getClass());
-        if (emitter == null) {
-            throw new UnsupportedOperationException("No CUDA emitter for " + this.getClass().getName());
-        }
-        return emitter.doCUDAGen(this, context, storeTo);
-    }
-
-    public enum ReturnType {
-        F64,
-        F32,
-        ;
-    }
-
+public record GeneratedCUDASource(
+        String source,
+        byte[] constData,
+        Object2IntOpenHashMap<Object> dynamicDataOffsets,
+        Map<String, String> defines,
+        RegistryEntry<Biome>[] biomeRegistryEntries,
+        BlockState[] blockStateRegistryEntries,
+        int flatCacheCount,
+        int cache2dCount,
+        int interpolatorCount
+) {
 }

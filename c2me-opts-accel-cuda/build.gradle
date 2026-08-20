@@ -1,0 +1,21 @@
+moduleDependencies(project, [
+        "c2me-base",
+        "c2me-opts-dfc",
+        "c2me-opts-natives-math",
+        "c2me-rewrites-chunk-system",
+])
+
+dependencies {
+    implementation "org.lwjgl:lwjgl:${lwjgl_version}"
+    implementation "org.lwjgl:lwjgl-zstd:${lwjgl_version}"
+    include "org.lwjgl:lwjgl-zstd:${lwjgl_version}"
+    include implementation("org.apache.commons:commons-compress:${apache_commons_compress_version}") {
+        transitive = false
+    }
+
+    include runtimeOnly("org.lwjgl:lwjgl-zstd:${lwjgl_version}:natives-linux")
+    include runtimeOnly("org.lwjgl:lwjgl-zstd:${lwjgl_version}:natives-linux-arm64")
+    include runtimeOnly("org.lwjgl:lwjgl-zstd:${lwjgl_version}:natives-windows")
+    include runtimeOnly("org.lwjgl:lwjgl-zstd:${lwjgl_version}:natives-macos")
+    include runtimeOnly("org.lwjgl:lwjgl-zstd:${lwjgl_version}:natives-macos-arm64")
+}

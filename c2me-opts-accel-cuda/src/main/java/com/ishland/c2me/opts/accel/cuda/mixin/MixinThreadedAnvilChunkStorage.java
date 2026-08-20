@@ -1,0 +1,82 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2026 GTYX06
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+package com.ishland.c2me.opts.accel.cuda.mixin;
+
+import com.ishland.c2me.opts.accel.cuda.common.ducks.MinecraftServerExtension;
+import com.ishland.c2me.opts.accel.cuda.common.ducks.TACSExtension;
+import com.ishland.c2me.opts.accel.cuda.common.gen.CUDAServerGlobalContext;
+import com.ishland.c2me.opts.accel.cuda.common.gen.CUDAServerWorldContext;
+import net.minecraft.server.world.ServerChunkLoadingManager;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.world.chunk.ChunkGenerationContext;
+import net.minecraft.world.gen.noise.NoiseConfig;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(ServerChunkLoadingManager.class)
+public class MixinThreadedAnvilChunkStorage implements TACSExtension {
+
+    @Shadow
+    @Final
+    ServerWorld world;
+
+    @Shadow
+    @Final
+    private NoiseConfig noiseConfig;
+
+    @Shadow
+    @Final
+    private net.minecraft.world.chunk.ChunkGenerationContext generationContext;
+
+    @Unique
+    private CUDAServerWorldContext c2me$cudaWorldContext;
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void onInit(CallbackInfo ci) {
+        CUDAServerGlobalContext globalContext = ((MinecraftServerExtension) this.world.getServer()).c2me$getCUDAGlobalContext();
+        if (globalContext != null) {
+            this.c2me$cudaWorldContext = new CUDAServerWorldContext(globalContext, this.world);
+            this.c2me$cudaWorldContext.initialize(this.generationContext.generator(), this.noiseConfig);
+        }
+    }
+
+    @Inject(method = "close", at = @At("HEAD"))
+    private void onClose(CallbackInfo ci) {
+        if (this.c2me$cudaWorldContext != null) {
+            this.c2me$cudaWorldContext.close();
+            this.c2me$cudaWorldContext = null;
+        }
+    }
+
+    @Override
+    public CUDAServerWorldContext c2me$getCUDAServerWorldContext() {
+        return this.c2me$cudaWorldContext;
+    }
+}

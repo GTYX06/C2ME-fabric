@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.ishland.c2me.opts.accel.cuda.mixin",
+  "plugin": "com.ishland.c2me.opts.accel.cuda.MixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MixinChunkGenerating",
+    "MixinChunkNoiseSampler",
+    "MixinMinecraftServer",
+    "MixinPalettedContainer",
+    "MixinThreadedAnvilChunkStorage",
+    "chunksystem_integration.MixinNewStatusHook",
+    "chunksystem_integration.MixinVanillaWorldGenerationDelegate",
+    "deobf.MixinNoiseChunkGenerator",
+    "debug.disable_features_surface_rules.MixinChunkGenerating"
+  ],
+  "client": [
+    "client.MixinGuiManager"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

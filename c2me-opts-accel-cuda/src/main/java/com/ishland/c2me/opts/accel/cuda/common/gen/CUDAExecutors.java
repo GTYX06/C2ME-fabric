@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2021-2026 ishland
+ * Copyright (c) 2026 GTYX06
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,26 @@
  * THE SOFTWARE.
  */
 
-package com.ishland.c2me.opts.dfc.common.ast;
+package com.ishland.c2me.opts.accel.cuda.common.gen;
 
-public interface AstNode {
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
-    AstNode[] getChildren();
+public class CUDAExecutors {
 
-    AstNode transform(AstTransformer transformer);
+    private static final AtomicInteger THREAD_COUNTER = new AtomicInteger(0);
 
-    // data to be created as fields in generated code are only compared by class type
-    boolean relaxedEquals(AstNode o);
-
-    int relaxedHashCode();
-
-    default ReturnType getReturnType() {
-        return ReturnType.F64;
-    }
-
-    @SuppressWarnings("unchecked")
-    default String generateCUDAC(com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenFunctionContext context, String storeTo) {
-        com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode> emitter = (com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode>) com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenData.REGISTRY.get(this.getClass());
-        if (emitter == null) {
-            throw new UnsupportedOperationException("No CUDA emitter for " + this.getClass().getName());
-        }
-        return emitter.doCUDAGen(this, context, storeTo);
-    }
-
-    public enum ReturnType {
-        F64,
-        F32,
-        ;
-    }
-
+    public static final ExecutorService CUDA_COMPLETION_EXECUTOR = Executors.newFixedThreadPool(
+            Math.max(2, Runtime.getRuntime().availableProcessors() / 2),
+            new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread t = new Thread(r, "C2ME CUDA Worker #" + THREAD_COUNTER.incrementAndGet());
+                    t.setDaemon(true);
+                    return t;
+                }
+            }
+    );
 }

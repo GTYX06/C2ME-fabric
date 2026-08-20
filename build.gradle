@@ -36,17 +36,19 @@ configure(allprojects) {
     license {
         include("**/*.java")
         include("**/*.cl")
+        include("**/*.cu")
         exclude("**/FastNoiseLiteCopy.java")
 
         headerCommentManager.register(dev.yumi.gradle.licenser.api.comment.CStyleHeaderComment.INSTANCE, "cl")
+        headerCommentManager.register(dev.yumi.gradle.licenser.api.comment.CStyleHeaderComment.INSTANCE, "cu")
     }
 
-    if (it.name == "c2me-opts-accel-opencl") {
+    if (it.name == "c2me-opts-accel-cuda") {
         license {
-            rule(rootProject.file("licenses/LICENSE-ARR.txt"))
+            rule(rootProject.file("licenses/LICENSE-MIT-GTYX06.txt"))
         }
         jar {
-            from(rootProject.file("licenses/LICENSE-ARR.txt"))
+            from(rootProject.file("licenses/LICENSE-MIT-GTYX06.txt"))
         }
     } else {
         license {
@@ -225,7 +227,6 @@ configure (allprojects - project(":tests")) {
         // workaround loom issue for devlaunch
         afterEvaluate {
             minecraftServerRuntimeLibraries "org.lwjgl:lwjgl:${lwjgl_version}"
-            minecraftServerRuntimeLibraries "org.lwjgl:lwjgl-opencl:${lwjgl_version}"
             minecraftServerRuntimeLibraries "org.lwjgl:lwjgl-zstd:${lwjgl_version}"
             minecraftServerRuntimeLibraries("org.apache.commons:commons-compress:${apache_commons_compress_version}") {
                 transitive = false
@@ -313,9 +314,9 @@ publishMods {
             projectId = "533097"
         }
 
-        curseforge("curseforgeOpenCLAccel") {
+        curseforge("curseforgeCUDAAccel") {
             from cfOptions
-            file = project(":c2me-opts-accel-opencl").remapJar.archiveFile
+            file = project(":c2me-opts-accel-cuda").remapJar.archiveFile
             projectId = "1563823"
             requires("c2me")
             requires("scalablelux")
@@ -334,9 +335,9 @@ publishMods {
             projectId = "VSNURh3q"
         }
 
-        modrinth("modrinthOpenCLAccel") {
+        modrinth("modrinthCUDAAccel") {
             from mrOptions
-            file = project(":c2me-opts-accel-opencl").remapJar.archiveFile
+            file = project(":c2me-opts-accel-cuda").remapJar.archiveFile
             projectId = "qtPMklut"
             requires {
                 id = "VSNURh3q"
@@ -357,7 +358,7 @@ dependencies {
 
             def projectName = it.name
             api project(path: ":${projectName}", configuration: "namedElements")
-            if (projectName != "c2me-opts-accel-opencl" && projectName != "tests") {
+            if (projectName != "c2me-opts-accel-cuda" && projectName != "tests") {
                 include project(":${projectName}")
             }
         }
@@ -366,7 +367,7 @@ dependencies {
 
 String getVersionSuffix() {
     def stdout = providers.exec {
-        commandLine 'git', 'describe', '--tags', '--dirty', '--broken'
+        commandLine 'git', 'describe', '--tags', '--dirty', '--broken', '--always'
     }.standardOutput.asText.get()
     stdout = stdout.toString().strip()
     def suffix = ""

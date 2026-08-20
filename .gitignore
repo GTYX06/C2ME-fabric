@@ -131,3 +131,7 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 cmake-build-*/
+bin/
+**/bin/
+.c2me-cuda-cache/
+**/.c2me-cuda-cache/

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2021-2026 ishland
+ * Copyright (c) 2026 GTYX06
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,21 @@
  * THE SOFTWARE.
  */
 
-package com.ishland.c2me.opts.dfc.common.ast;
+package com.ishland.c2me.opts.accel.cuda.common.compiler.emitters.misc;
 
-public interface AstNode {
+import com.ishland.c2me.opts.dfc.common.ast.integration.lithostitched.misc.MixNode;
+import com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter;
+import com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenFunctionContext;
 
-    AstNode[] getChildren();
+public class MixNodeCUDACCEmitter implements CUDACEmitter<MixNode> {
 
-    AstNode transform(AstTransformer transformer);
-
-    // data to be created as fields in generated code are only compared by class type
-    boolean relaxedEquals(AstNode o);
-
-    int relaxedHashCode();
-
-    default ReturnType getReturnType() {
-        return ReturnType.F64;
+    @Override
+    public String doCUDAGen(MixNode node, CUDACGenFunctionContext context, String storeTo) {
+        if (storeTo == null) storeTo = context.nextVarName();
+        String input = context.getDelegateVar(context.newVarF64(node.input));
+        String arg1 = context.getDelegateVar(context.newVarF64(node.argument1));
+        String arg2 = context.getDelegateVar(context.newVarF64(node.argument2));
+        context.appendRaw(String.format("const double %s = %s + %s * (%s - %s);\n", storeTo, arg1, input, arg2, arg1));
+        return storeTo;
     }
-
-    @SuppressWarnings("unchecked")
-    default String generateCUDAC(com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenFunctionContext context, String storeTo) {
-        com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode> emitter = (com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode>) com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenData.REGISTRY.get(this.getClass());
-        if (emitter == null) {
-            throw new UnsupportedOperationException("No CUDA emitter for " + this.getClass().getName());
-        }
-        return emitter.doCUDAGen(this, context, storeTo);
-    }
-
-    public enum ReturnType {
-        F64,
-        F32,
-        ;
-    }
-
 }

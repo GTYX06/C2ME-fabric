@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2021-2026 ishland
+ * Copyright (c) 2026 GTYX06
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,33 @@
  * THE SOFTWARE.
  */
 
-package com.ishland.c2me.opts.dfc.common.ast;
+package com.ishland.c2me.opts.accel.cuda.common.progress;
 
-public interface AstNode {
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
-    AstNode[] getChildren();
+public class GlobalProgressStash {
 
-    AstNode transform(AstTransformer transformer);
+    private static final AtomicReference<String> CURRENT_STATUS = new AtomicReference<>("");
+    private static final AtomicInteger TOTAL_TASKS = new AtomicInteger(0);
+    private static final AtomicInteger COMPLETED_TASKS = new AtomicInteger(0);
 
-    // data to be created as fields in generated code are only compared by class type
-    boolean relaxedEquals(AstNode o);
-
-    int relaxedHashCode();
-
-    default ReturnType getReturnType() {
-        return ReturnType.F64;
+    public static void setStatus(String status) {
+        CURRENT_STATUS.set(status);
     }
 
-    @SuppressWarnings("unchecked")
-    default String generateCUDAC(com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenFunctionContext context, String storeTo) {
-        com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode> emitter = (com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode>) com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenData.REGISTRY.get(this.getClass());
-        if (emitter == null) {
-            throw new UnsupportedOperationException("No CUDA emitter for " + this.getClass().getName());
-        }
-        return emitter.doCUDAGen(this, context, storeTo);
+    public static String getStatus() {
+        return CURRENT_STATUS.get();
     }
 
-    public enum ReturnType {
-        F64,
-        F32,
-        ;
+    public static void setProgress(int completed, int total) {
+        COMPLETED_TASKS.set(completed);
+        TOTAL_TASKS.set(total);
     }
 
+    public static float getProgressRatio() {
+        int total = TOTAL_TASKS.get();
+        if (total <= 0) return 0.0f;
+        return (float) COMPLETED_TASKS.get() / (float) total;
+    }
 }

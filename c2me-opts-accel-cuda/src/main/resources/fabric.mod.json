@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "c2me-opts-accel-cuda",
+  "version": "${version}",
+  "name": "Concurrent Chunk Management Engine (Optimizations/Acceleration/CUDA)",
+  "description": "CUDA acceleration for world generation",
+  "environment": "*",
+  "mixins": [
+    "c2me-opts-accel-cuda.mixins.json"
+  ],
+  "depends": {
+    "minecraft": "*",
+    "fabricloader": "*",
+    "c2me-base": "*",
+    "c2me-opts-dfc": "*",
+    "c2me-opts-natives-math": "*",
+    "c2me-rewrites-chunk-system": "*"
+  },
+  "authors": [
+    "GTYX06"
+  ],
+  "contact": {
+    "sources": "https://github.com/ishland/C2ME-fabric",
+    "homepage": "https://github.com/ishland/C2ME-fabric"
+  },
+  "license": "MIT",
+  "custom": {
+    "modmenu": {
+      "parent": "c2me"
+    }
+  }
+}

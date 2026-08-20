@@ -162,7 +162,7 @@ public abstract class AbstractCompiledDensityFunction implements DensityFunction
         throw new UnsupportedOperationException();
     }
 
-    protected DensityFunction getFallback() {
+    public DensityFunction getFallback() {
         return this.blendingFallback != null ? this.blendingFallback.get() : null;
     }
 }

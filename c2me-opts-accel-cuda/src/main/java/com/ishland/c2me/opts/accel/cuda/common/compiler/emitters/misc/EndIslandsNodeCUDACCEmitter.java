@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2021-2026 ishland
+ * Copyright (c) 2026 GTYX06
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,18 @@
  * THE SOFTWARE.
  */
 
-package com.ishland.c2me.opts.dfc.common.ast;
+package com.ishland.c2me.opts.accel.cuda.common.compiler.emitters.misc;
 
-public interface AstNode {
+import com.ishland.c2me.opts.dfc.common.ast.misc.EndIslandsNode;
+import com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter;
+import com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenFunctionContext;
 
-    AstNode[] getChildren();
-
-    AstNode transform(AstTransformer transformer);
-
-    // data to be created as fields in generated code are only compared by class type
-    boolean relaxedEquals(AstNode o);
-
-    int relaxedHashCode();
-
-    default ReturnType getReturnType() {
-        return ReturnType.F64;
+public class EndIslandsNodeCUDACCEmitter implements CUDACEmitter<EndIslandsNode> {
+    @Override
+    public String doCUDAGen(EndIslandsNode node, CUDACGenFunctionContext context, String storeTo) {
+        if (storeTo == null) storeTo = context.nextVarName();
+        int offset = context.getGlobalContext().allocGlobalConstDataObject(node.endIslands);
+        context.appendRaw(String.format("const double %s = ((double) math_noise_simplex_endIslands_sample((const uint32_t *)(cdata + %d), ctx.x, ctx.z)) / 64.0;\n", storeTo, offset));
+        return storeTo;
     }
-
-    @SuppressWarnings("unchecked")
-    default String generateCUDAC(com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenFunctionContext context, String storeTo) {
-        com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode> emitter = (com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACEmitter<AstNode>) com.ishland.c2me.opts.dfc.common.gen.cuda.CUDACGenData.REGISTRY.get(this.getClass());
-        if (emitter == null) {
-            throw new UnsupportedOperationException("No CUDA emitter for " + this.getClass().getName());
-        }
-        return emitter.doCUDAGen(this, context, storeTo);
-    }
-
-    public enum ReturnType {
-        F64,
-        F32,
-        ;
-    }
-
 }
