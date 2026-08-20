@@ -24,6 +24,7 @@
 
 package com.ishland.c2me.opts.accel.cuda.common.gen;
 
+import com.ishland.c2me.opts.accel.cuda.common.Config;
 import com.ishland.c2me.opts.accel.cuda.common.bindings.CUDADriver;
 import com.ishland.c2me.opts.accel.cuda.common.compiler.GeneratedCUDASource;
 import com.ishland.c2me.opts.accel.cuda.common.ducks.PalettedContainerExtension;
@@ -99,6 +100,14 @@ public class CUDAServerBatchedBiomeNoiseContext {
                 MemorySegment hostBiomesSeg = hostArena.allocate(totalBiomeBytes);
                 MemorySegment hostBlocksSeg = hostArena.allocate(totalBlockBytes);
 
+                boolean useGraph = Config.enableCUDAGraphs;
+                if (useGraph) {
+                    int capRes = CUDADriver.cuStreamBeginCapture(stream, CUDADriver.CU_STREAM_CAPTURE_MODE_GLOBAL);
+                    if (capRes != CUDADriver.CUDA_SUCCESS) {
+                        useGraph = false;
+                    }
+                }
+
                 for (int i = 0; i < chunks.size(); i++) {
                     Chunk chunk = chunks.get(i);
                     ChunkPos pos = chunk.getPos();
@@ -171,7 +180,29 @@ public class CUDAServerBatchedBiomeNoiseContext {
                 CUDADriver.cuMemcpyDtoHAsync(hostBiomesSeg, dBiomes, totalBiomeBytes, stream);
                 CUDADriver.cuMemcpyDtoHAsync(hostBlocksSeg, dBlocks, totalBlockBytes, stream);
 
-                CUDADriver.cuStreamSynchronize(stream);
+                if (useGraph) {
+                    MemorySegment pGraph = hostArena.allocate(ValueLayout.ADDRESS);
+                    int endRes = CUDADriver.cuStreamEndCapture(stream, pGraph);
+                    if (endRes == CUDADriver.CUDA_SUCCESS) {
+                        MemorySegment hGraph = pGraph.get(ValueLayout.ADDRESS, 0);
+                        MemorySegment pGraphExec = hostArena.allocate(ValueLayout.ADDRESS);
+                        int instRes = CUDADriver.cuGraphInstantiate(pGraphExec, hGraph, 0);
+                        if (instRes == CUDADriver.CUDA_SUCCESS) {
+                            MemorySegment hGraphExec = pGraphExec.get(ValueLayout.ADDRESS, 0);
+                            CUDADriver.cuGraphLaunch(hGraphExec, stream);
+                            CUDADriver.cuStreamSynchronize(stream);
+                            CUDADriver.cuGraphExecDestroy(hGraphExec);
+                            CUDADriver.cuGraphDestroy(hGraph);
+                        } else {
+                            CUDADriver.cuGraphDestroy(hGraph);
+                            CUDADriver.cuStreamSynchronize(stream);
+                        }
+                    } else {
+                        CUDADriver.cuStreamSynchronize(stream);
+                    }
+                } else {
+                    CUDADriver.cuStreamSynchronize(stream);
+                }
 
                 GeneratedCUDASource genSource = worldContext.getGeneratedSource();
                 RegistryEntry<Biome>[] biomes = genSource.biomeRegistryEntries();

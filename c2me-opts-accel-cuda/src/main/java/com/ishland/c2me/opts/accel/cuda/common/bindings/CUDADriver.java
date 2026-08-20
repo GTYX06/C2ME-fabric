@@ -66,6 +66,10 @@ public class CUDADriver {
     public static final int CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76;
     public static final int CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED = 115;
 
+    public static final int CU_STREAM_CAPTURE_MODE_GLOBAL = 0;
+    public static final int CU_STREAM_CAPTURE_MODE_THREAD_LOCAL = 1;
+    public static final int CU_STREAM_CAPTURE_MODE_RELAXED = 2;
+
     public static final boolean IS_AVAILABLE;
 
     private static MethodHandle cuInitHandle;
@@ -88,6 +92,15 @@ public class CUDADriver {
     private static MethodHandle cuStreamDestroyHandle;
     private static MethodHandle cuStreamSynchronizeHandle;
     private static MethodHandle cuStreamQueryHandle;
+    private static MethodHandle cuStreamBeginCaptureHandle;
+    private static MethodHandle cuStreamEndCaptureHandle;
+    private static MethodHandle cuStreamIsCapturingHandle;
+    private static MethodHandle cuGraphCreateHandle;
+    private static MethodHandle cuGraphDestroyHandle;
+    private static MethodHandle cuGraphInstantiateHandle;
+    private static MethodHandle cuGraphExecDestroyHandle;
+    private static MethodHandle cuGraphLaunchHandle;
+    private static MethodHandle cuGraphExecUpdateHandle;
     private static MethodHandle cuEventCreateHandle;
     private static MethodHandle cuEventDestroyHandle;
     private static MethodHandle cuEventRecordHandle;
@@ -176,6 +189,21 @@ public class CUDADriver {
                 }
                 cuStreamSynchronizeHandle = bind(linker, lookup, "cuStreamSynchronize", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
                 cuStreamQueryHandle = bind(linker, lookup, "cuStreamQuery", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+                cuStreamBeginCaptureHandle = bindOptional(linker, lookup, "cuStreamBeginCapture_v2", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+                if (cuStreamBeginCaptureHandle == null) {
+                    cuStreamBeginCaptureHandle = bindOptional(linker, lookup, "cuStreamBeginCapture", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+                }
+                cuStreamEndCaptureHandle = bindOptional(linker, lookup, "cuStreamEndCapture", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+                cuStreamIsCapturingHandle = bindOptional(linker, lookup, "cuStreamIsCapturing", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+                cuGraphCreateHandle = bindOptional(linker, lookup, "cuGraphCreate", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+                cuGraphDestroyHandle = bindOptional(linker, lookup, "cuGraphDestroy", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+                cuGraphInstantiateHandle = bindOptional(linker, lookup, "cuGraphInstantiate_v2", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+                if (cuGraphInstantiateHandle == null) {
+                    cuGraphInstantiateHandle = bindOptional(linker, lookup, "cuGraphInstantiateWithFlags", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+                }
+                cuGraphExecDestroyHandle = bindOptional(linker, lookup, "cuGraphExecDestroy", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+                cuGraphLaunchHandle = bindOptional(linker, lookup, "cuGraphLaunch", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+                cuGraphExecUpdateHandle = bindOptional(linker, lookup, "cuGraphExecUpdate", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
                 cuEventCreateHandle = bind(linker, lookup, "cuEventCreate", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
                 cuEventDestroyHandle = bindOptional(linker, lookup, "cuEventDestroy_v2", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
@@ -625,6 +653,87 @@ public class CUDADriver {
                     sharedMemBytes, hStream,
                     kernelParams, extra
             );
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static int cuStreamBeginCapture(MemorySegment hStream, int mode) {
+        if (cuStreamBeginCaptureHandle == null) return -1;
+        try {
+            return (int) cuStreamBeginCaptureHandle.invokeExact(hStream, mode);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static int cuStreamEndCapture(MemorySegment hStream, MemorySegment phGraph) {
+        if (cuStreamEndCaptureHandle == null) return -1;
+        try {
+            return (int) cuStreamEndCaptureHandle.invokeExact(hStream, phGraph);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static int cuStreamIsCapturing(MemorySegment hStream, MemorySegment captureStatus) {
+        if (cuStreamIsCapturingHandle == null) return -1;
+        try {
+            return (int) cuStreamIsCapturingHandle.invokeExact(hStream, captureStatus);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static int cuGraphCreate(MemorySegment phGraph, int flags) {
+        if (cuGraphCreateHandle == null) return -1;
+        try {
+            return (int) cuGraphCreateHandle.invokeExact(phGraph, flags);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static int cuGraphDestroy(MemorySegment hGraph) {
+        if (cuGraphDestroyHandle == null) return -1;
+        try {
+            return (int) cuGraphDestroyHandle.invokeExact(hGraph);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static int cuGraphInstantiate(MemorySegment phGraphExec, MemorySegment hGraph, long flags) {
+        if (cuGraphInstantiateHandle == null) return -1;
+        try {
+            return (int) cuGraphInstantiateHandle.invokeExact(phGraphExec, hGraph, flags);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static int cuGraphExecDestroy(MemorySegment hGraphExec) {
+        if (cuGraphExecDestroyHandle == null) return -1;
+        try {
+            return (int) cuGraphExecDestroyHandle.invokeExact(hGraphExec);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static int cuGraphLaunch(MemorySegment hGraphExec, MemorySegment hStream) {
+        if (cuGraphLaunchHandle == null) return -1;
+        try {
+            return (int) cuGraphLaunchHandle.invokeExact(hGraphExec, hStream);
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static int cuGraphExecUpdate(MemorySegment hGraphExec, MemorySegment hGraph, MemorySegment resultInfo) {
+        if (cuGraphExecUpdateHandle == null) return -1;
+        try {
+            return (int) cuGraphExecUpdateHandle.invokeExact(hGraphExec, hGraph, resultInfo);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }

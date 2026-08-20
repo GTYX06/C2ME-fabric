@@ -51,6 +51,14 @@ public class Config {
                     """)
             .getBoolean(true, true);
 
+    public static final boolean enableCUDAGraphs = new ConfigSystem.ConfigAccessor()
+            .key("cudaAccel.enableCUDAGraphs")
+            .comment("""
+                    Whether to use CUDA Graphs for batch world generation
+                    Reduces CPU driver launch latency and improves GPU hardware scheduling
+                    """)
+            .getBoolean(true, true);
+
     public static final boolean allowIncompatibilityFallback = new ConfigSystem.ConfigAccessor()
             .key("cudaAccel.allowIncompatibilityFallback")
             .comment("""

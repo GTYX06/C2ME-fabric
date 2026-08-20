@@ -28,6 +28,7 @@ import com.ishland.c2me.opts.accel.cuda.common.bindings.CUDADriver;
 import com.ishland.c2me.opts.accel.cuda.common.compiler.CUDACGen;
 import com.ishland.c2me.opts.accel.cuda.common.compiler.GeneratedCUDASource;
 import com.ishland.c2me.opts.accel.cuda.common.gen.cache.Stage1Cache;
+import com.ishland.c2me.opts.accel.cuda.common.gen.graph.CUDAGraphManager;
 import com.ishland.c2me.opts.accel.cuda.common.shader_cache.ShaderCacheManager;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.world.ServerWorld;
@@ -172,6 +173,12 @@ public class CUDAServerWorldContext implements AutoCloseable {
         return constDataDevPtr;
     }
 
+    private final CUDAGraphManager graphManager = new CUDAGraphManager();
+
+    public CUDAGraphManager getGraphManager() {
+        return graphManager;
+    }
+
     public MemorySegment getKernelBiomeMultiNoise() {
         return kernelBiomeMultiNoise;
     }
@@ -192,6 +199,10 @@ public class CUDAServerWorldContext implements AutoCloseable {
     public void close() {
         if (!initialized) return;
         initialized = false;
+        try {
+            graphManager.close();
+        } catch (Throwable ignored) {
+        }
         if (constDataDevPtr != null && !constDataDevPtr.equals(MemorySegment.NULL)) {
             try {
                 CUDADriver.cuMemFree(constDataDevPtr);
