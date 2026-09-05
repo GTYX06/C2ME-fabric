@@ -20,8 +20,13 @@ import com.ishland.c2me.opts.accel.vulkan.common.compiler.VulkanGen;
 import com.ishland.c2me.opts.dfc.common.ast.AstNode;
 import com.ishland.c2me.opts.dfc.common.ast.unary.AbsNode;
 import com.ishland.c2me.opts.dfc.common.ast.unary.AbstractUnaryNode;
+import com.ishland.c2me.opts.dfc.common.ast.unary.CeilNode;
+import com.ishland.c2me.opts.dfc.common.ast.unary.CosNode;
 import com.ishland.c2me.opts.dfc.common.ast.unary.CubeNode;
+import com.ishland.c2me.opts.dfc.common.ast.unary.FloorNode;
 import com.ishland.c2me.opts.dfc.common.ast.unary.NegMulNode;
+import com.ishland.c2me.opts.dfc.common.ast.unary.SinNode;
+import com.ishland.c2me.opts.dfc.common.ast.unary.SqrtNode;
 import com.ishland.c2me.opts.dfc.common.ast.unary.SquareNode;
 import com.ishland.c2me.opts.dfc.common.ast.unary.SqueezeNode;
 import com.ishland.c2me.opts.dfc.common.gen.CodeGenRegistry;
@@ -57,6 +62,30 @@ public class UnaryNodeVulkanEmitters {
         }
     }
 
+    public static class CeilNodeEmitter extends AbstractGenericUnaryNodeVulkanEmitter<CeilNode> {
+        public static final CeilNodeEmitter INSTANCE = new CeilNodeEmitter();
+
+        private CeilNodeEmitter() {
+        }
+
+        @Override
+        protected void genBody(CeilNode node, VulkanGenFunctionContext context, String storeTo, StringBuilder sb, ValuesMethodDefF64 operand) {
+            sb.append(storeTo).append(" = ceil(").append(context.getDelegateVar(operand)).append(");\n");
+        }
+    }
+
+    public static class CosNodeEmitter extends AbstractGenericUnaryNodeVulkanEmitter<CosNode> {
+        public static final CosNodeEmitter INSTANCE = new CosNodeEmitter();
+
+        private CosNodeEmitter() {
+        }
+
+        @Override
+        protected void genBody(CosNode node, VulkanGenFunctionContext context, String storeTo, StringBuilder sb, ValuesMethodDefF64 operand) {
+            sb.append(storeTo).append(" = cos(").append(context.getDelegateVar(operand)).append(");\n");
+        }
+    }
+
     public static class CubeNodeEmitter extends AbstractGenericUnaryNodeVulkanEmitter<CubeNode> {
         public static final CubeNodeEmitter INSTANCE = new CubeNodeEmitter();
 
@@ -71,6 +100,18 @@ public class UnaryNodeVulkanEmitters {
         }
     }
 
+    public static class FloorNodeEmitter extends AbstractGenericUnaryNodeVulkanEmitter<FloorNode> {
+        public static final FloorNodeEmitter INSTANCE = new FloorNodeEmitter();
+
+        private FloorNodeEmitter() {
+        }
+
+        @Override
+        protected void genBody(FloorNode node, VulkanGenFunctionContext context, String storeTo, StringBuilder sb, ValuesMethodDefF64 operand) {
+            sb.append(storeTo).append(" = floor(").append(context.getDelegateVar(operand)).append(");\n");
+        }
+    }
+
     public static class NegMulNodeEmitter extends AbstractGenericUnaryNodeVulkanEmitter<NegMulNode> {
         public static final NegMulNodeEmitter INSTANCE = new NegMulNodeEmitter();
 
@@ -82,6 +123,30 @@ public class UnaryNodeVulkanEmitters {
             sb
                     .append("double v = ").append(context.getDelegateVar(operand)).append(";\n")
                     .append(storeTo).append(" = v > 0.0 ? v : v * ").append(VulkanGen.literal(node.negMul)).append(";\n");
+        }
+    }
+
+    public static class SinNodeEmitter extends AbstractGenericUnaryNodeVulkanEmitter<SinNode> {
+        public static final SinNodeEmitter INSTANCE = new SinNodeEmitter();
+
+        private SinNodeEmitter() {
+        }
+
+        @Override
+        protected void genBody(SinNode node, VulkanGenFunctionContext context, String storeTo, StringBuilder sb, ValuesMethodDefF64 operand) {
+            sb.append(storeTo).append(" = sin(").append(context.getDelegateVar(operand)).append(");\n");
+        }
+    }
+
+    public static class SqrtNodeEmitter extends AbstractGenericUnaryNodeVulkanEmitter<SqrtNode> {
+        public static final SqrtNodeEmitter INSTANCE = new SqrtNodeEmitter();
+
+        private SqrtNodeEmitter() {
+        }
+
+        @Override
+        protected void genBody(SqrtNode node, VulkanGenFunctionContext context, String storeTo, StringBuilder sb, ValuesMethodDefF64 operand) {
+            sb.append(storeTo).append(" = sqrt(").append(context.getDelegateVar(operand)).append(");\n");
         }
     }
 
@@ -115,8 +180,13 @@ public class UnaryNodeVulkanEmitters {
 
     public static void register(CodeGenRegistry<VulkanCEmitter<? extends AstNode>> registry) {
         registry.registerExactMatch(AbsNode.class, AbsNodeEmitter.INSTANCE);
+        registry.registerExactMatch(CeilNode.class, CeilNodeEmitter.INSTANCE);
+        registry.registerExactMatch(CosNode.class, CosNodeEmitter.INSTANCE);
         registry.registerExactMatch(CubeNode.class, CubeNodeEmitter.INSTANCE);
+        registry.registerExactMatch(FloorNode.class, FloorNodeEmitter.INSTANCE);
         registry.registerExactMatch(NegMulNode.class, NegMulNodeEmitter.INSTANCE);
+        registry.registerExactMatch(SinNode.class, SinNodeEmitter.INSTANCE);
+        registry.registerExactMatch(SqrtNode.class, SqrtNodeEmitter.INSTANCE);
         registry.registerExactMatch(SquareNode.class, SquareNodeEmitter.INSTANCE);
         registry.registerExactMatch(SqueezeNode.class, SqueezeNodeEmitter.INSTANCE);
     }
