@@ -55,11 +55,17 @@ public class MixinChunkNoiseSampler implements ChunkNoiseSamplerExtension {
             return;
         }
         Stage1Cache.AreaCacheEntry areaCacheEntry = TLUtil.stage1CachePassing.get();
+        if (areaCacheEntry == null) {
+            return;
+        }
+        int[] surfaceHeights = areaCacheEntry.surfaceHeights();
+        if (surfaceHeights == null || surfaceHeights.length == 0) {
+            return;
+        }
         int chunkX = areaCacheEntry.chunkX();
         int chunkZ = areaCacheEntry.chunkZ();
         int sizeX = areaCacheEntry.sizeX() * 4 + 32;
         int sizeZ = areaCacheEntry.sizeZ() * 4 + 32;
-        int[] surfaceHeights = areaCacheEntry.surfaceHeights();
         Assertions.assertTrue(sizeX * sizeZ == surfaceHeights.length);
         for (int relX = 0; relX < sizeX; relX++) {
             for (int relZ = 0; relZ < sizeZ; relZ++) {

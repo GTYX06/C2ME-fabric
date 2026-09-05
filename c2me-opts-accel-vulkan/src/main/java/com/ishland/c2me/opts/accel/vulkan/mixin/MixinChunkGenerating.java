@@ -51,6 +51,9 @@ public class MixinChunkGenerating {
             if (TLUtil.stage1CachePassing.isBound()) {
                 throw new IllegalStateException("Reentrance");
             }
+            if (cacheEntry == null || cacheEntry.surfaceHeights() == null || cacheEntry.surfaceHeights().length == 0) {
+                return original.call(context, step, chunks, chunk);
+            }
             return ScopedValue.where(TLUtil.stage1CachePassing, cacheEntry).call(() -> original.call(context, step, chunks, chunk));
         }, ((IVanillaChunkManager) context.world().getChunkManager().chunkLoadingManager).c2me$getSchedulingManager().positionedExecutor(chunk.getPos().toLong()));
     }
